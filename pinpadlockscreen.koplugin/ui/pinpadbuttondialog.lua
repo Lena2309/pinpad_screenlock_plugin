@@ -8,6 +8,7 @@ with the primary modification in the `init` function.
 local Blitbuffer = require("ffi/blitbuffer")
 local ButtonTable = require("ui/widget/buttontable")
 local CenterContainer = require("ui/widget/container/centercontainer")
+local Config = require("config")
 local Device = require("device")
 local Font = require("ui/font")
 local FocusManager = require("ui/widget/focusmanager")
@@ -42,6 +43,8 @@ local PinpadButtonDialog = FocusManager:extend {
     info_padding = Size.padding.default,
     info_margin = Size.margin.default,
     dismissable = true,
+    custom_message = Config.custom_message or nil,
+    custom_message_position = Config.custom_message_position or nil,
 }
 
 function PinpadButtonDialog:init()
@@ -57,13 +60,14 @@ function PinpadButtonDialog:init()
         title_face = self.title_face
     end
 
-    local content = VerticalGroup:new {
+    local aesthetic_space = VerticalSpan:new { width = Size.margin.default + Size.padding.default }
+    local text_pin_content = VerticalGroup:new {
         align = "center",
         IconWidget:new {
             icon = self.icon,
             alpha = true,
         },
-        VerticalSpan:new { width = Size.margin.default + Size.padding.default },
+        aesthetic_space,
         VerticalGroup:new {
             align = "center",
             TextBoxWidget:new {
@@ -77,20 +81,78 @@ function PinpadButtonDialog:init()
 
     self.buttontable = ButtonTable:new {
         buttons = self.buttons,
-        width = content:getSize().w,
+        width = text_pin_content:getSize().w,
         shrink_unneeded_width = self.shrink_unneeded_width,
         shrink_min_width = self.shrink_min_width,
         show_parent = self,
     }
 
-    local separator
-    separator = LineWidget:new {
+    local separator = LineWidget:new {
         background = Blitbuffer.COLOR_GRAY,
         dimen = Geom:new {
-            w = content:getSize().w,
+            w = text_pin_content:getSize().w,
             h = Size.line.medium,
         },
     }
+
+    local content
+    if self.custom_message then
+        local custom_message_widget = TextBoxWidget:new {
+            text = self.custom_message,
+            face = title_face,
+            width = self.width,
+            alignment = self.title_align,
+        }
+        if self.custom_message_position == "top" then
+            content = VerticalGroup:new {
+                align = "center",
+                aesthetic_space,
+                custom_message_widget,
+                aesthetic_space,
+                separator,
+                aesthetic_space,
+                text_pin_content,
+                aesthetic_space,
+                separator,
+                self.buttontable,
+            }
+        elseif self.custom_message_position == "center" then
+            content = VerticalGroup:new {
+                align = "center",
+                aesthetic_space,
+                text_pin_content,
+                aesthetic_space,
+                separator,
+                aesthetic_space,
+                custom_message_widget,
+                aesthetic_space,
+                separator,
+                self.buttontable,
+            }
+        else
+            content = VerticalGroup:new {
+                align = "center",
+                aesthetic_space,
+                text_pin_content,
+                aesthetic_space,
+                separator,
+                self.buttontable,
+                separator,
+                aesthetic_space,
+                custom_message_widget,
+                aesthetic_space,
+            }
+        end
+    else
+        content = VerticalGroup:new {
+            align = "center",
+            aesthetic_space,
+            text_pin_content,
+            aesthetic_space,
+            separator,
+            self.buttontable,
+        }
+    end
 
     self.movable = MovableContainer:new {
         alpha = self.alpha,
@@ -102,14 +164,7 @@ function PinpadButtonDialog:init()
             padding = Size.padding.default,
             padding_top = 0,
             padding_bottom = 0,
-            VerticalGroup:new {
-                align = "center",
-                VerticalSpan:new { width = Size.margin.default + Size.padding.default },
-                content,
-                VerticalSpan:new { width = Size.margin.default + Size.padding.default },
-                separator,
-                self.buttontable,
-            },
+            content,
         },
         unmovable = true,
     }

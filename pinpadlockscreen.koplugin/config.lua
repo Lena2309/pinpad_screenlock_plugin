@@ -7,5 +7,11 @@ Future improvements may include loading the PIN from persistent storage.
 
 local config = {
     pin = "1234",
+    custom_message = nil, -- custom message, e.g. contact details
+    -- message position
+    -- "top"    - message displayed on top of the lock icon
+    -- "center" - message displayed between the digits pad and pin text
+    -- "bottom" - message displayed below the digits pad
+    custom_message_position = "top",
 }
 return config
