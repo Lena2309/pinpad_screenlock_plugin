@@ -13,5 +13,6 @@ local config = {
     -- "center" - message displayed between the digits pad and pin text
     -- "bottom" - message displayed below the digits pad
     custom_message_position = "top",
+    custom_message_alignement = "center", -- or "left" or "right"
 }
 return config

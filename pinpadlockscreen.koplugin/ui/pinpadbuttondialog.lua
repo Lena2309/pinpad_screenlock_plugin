@@ -17,6 +17,7 @@ local Geom = require("ui/geometry")
 local IconWidget = require("ui/widget/iconwidget")
 local LineWidget = require("ui/widget/linewidget")
 local MovableContainer = require("ui/widget/container/movablecontainer")
+local ScrollTextWidget = require("ui/widget/scrolltextwidget")
 local Size = require("ui/size")
 local TextBoxWidget = require("ui/widget/textboxwidget")
 local UIManager = require("ui/uimanager")
@@ -45,6 +46,7 @@ local PinpadButtonDialog = FocusManager:extend {
     dismissable = true,
     custom_message = Config.custom_message or nil,
     custom_message_position = Config.custom_message_position or nil,
+    custom_message_alignement = Config.custom_message_alignement or nil,
 }
 
 function PinpadButtonDialog:init()
@@ -97,12 +99,32 @@ function PinpadButtonDialog:init()
 
     local content
     if self.custom_message then
+        self.custom_message = self.custom_message:gsub("\\n", "\n")
         local custom_message_widget = TextBoxWidget:new {
             text = self.custom_message,
             face = title_face,
             width = self.width,
-            alignment = self.title_align,
+            alignment = self.custom_message_alignement,
         }
+
+        -- If the custom message ends up being too tall and makes the Pin Pad taller than the screen,
+        -- wrap it inside a ScrollableContainer
+        local max_height = self.buttontable:getSize().h + 3 * text_pin_content:getSize().h + Size.line.medium
+        local height = self.buttontable:getSize().h + text_pin_content:getSize().h + Size.line.medium +
+            custom_message_widget:getSize().h
+        if height > max_height then
+            local scroll_height = 3 * text_pin_content:getSize().h
+
+            custom_message_widget = ScrollTextWidget:new {
+                text = self.custom_message,
+                face = title_face,
+                width = self.width,
+                alignment = self.custom_message_alignement,
+                dialog = self,
+                height = scroll_height,
+            }
+        end
+
         if self.custom_message_position == "top" then
             content = VerticalGroup:new {
                 align = "center",
