@@ -22,8 +22,6 @@ I plan on making the PIN pad appear on the sceensaver background.
 
 I also plan on adding a menu entry where you could activate or deactivate the PIN lock and change the PIN code from there, as well as change the custom message and its position.
 
-For long custom messages, adding a scrollbar could be cool.
-
 Finally, I plan on adding a 3 tries limit, which if attained will activate a timeout.
 
 **Note:** I do not know when I'll be implementing these features. Also, my work could probably be optimized so I'm open to any new ideas and remarks.
