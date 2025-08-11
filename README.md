@@ -12,7 +12,7 @@ This work was originally based on the work of yogi81 and their plugin `screenloc
 
 1. Put `pinpadlockscreen.koplugin` into the `kodreader/plugins` directory.
 2. Put `lock.svg` or your own icon (with this specific name) into the `koreader/resources/icons/mdlight` directory.
-3. Change the hardcoded password in config.lua.
+3. Change the hardcoded password in config.lua. You can also add a custom message to display with the pin pad (e.g. contact details) and change its position.
 
 ## Future work
 
@@ -20,7 +20,9 @@ For now, the PIN pad will appear directly when the device is unlocked.
 Which means the document's page you were on before locking your device will be visible.
 I plan on making the PIN pad appear on the sceensaver background.
 
-I also plan on adding a menu entry where you could activate or deactivate the PIN lock and change the PIN code from there.
+I also plan on adding a menu entry where you could activate or deactivate the PIN lock and change the PIN code from there, as well as change the custom message and its position.
+
+For long custom messages, adding a scrollbar could be cool.
 
 Finally, I plan on adding a 3 tries limit, which if attained will activate a timeout.
 
