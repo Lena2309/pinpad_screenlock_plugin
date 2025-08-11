@@ -5,17 +5,17 @@ It handles user input, PIN validation, and UI interactions.
 ]]
 
 local Button = require("ui/widget/button")
+local Config = require("config")
 local PinPadButtonDialog = require("ui/pinpadbuttondialog")
 local FrameContainer = require("ui/widget/container/framecontainer")
 local InfoMessage = require("ui/widget/infomessage")
 local UIManager = require("ui/uimanager")
 local _ = require("gettext")
-local config = require("config")
 
 local ENTER_PIN_TEXT = _("Enter your PIN")
 
 local PinPadDialog = FrameContainer:extend {
-    correct_pin = config.pin or "1234", -- Default PIN or from a config file
+    correct_pin = Config.pin or "1234", -- Default PIN or from a config file
     icon = "lock",
 }
 
