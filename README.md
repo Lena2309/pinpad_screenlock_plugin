@@ -28,5 +28,6 @@ I plan on making the PIN pad appear on the sceensaver background.
 * Customizable message on PIN pad lock.
 * Menu Entry where everything is customizable without the need to restart KOReader or modify the code.
 * Using dynamic persistence instead of hardcoded variables.
+* Cancel button deletes one digits when entering PIN Code, hold it to delete everything.
 
 :)
