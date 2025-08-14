@@ -11,6 +11,8 @@ This work was originally based on the work of yogi81 and their plugin `screenloc
 3. Activate and change your password through the menu in Settings -> Screen -> PIN Pad Lock.
 The default code is "1234". You can also add a custom message to display with the pin pad (e.g. contact details) and change its position and text alignment. You can also jump lines using "\n" in the message.
 
+**Note:** There's no limit to the number of digits your code may contain, but good luck if you forget your code (you'll have to dig into your memory or KOReader to find it back).
+
 ## Future work
 
 * For now, the PIN pad will appear directly on the display showed when the device was locked.
