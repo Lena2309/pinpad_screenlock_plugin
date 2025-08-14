@@ -4,10 +4,6 @@ A small plugin to enable locking the screen of KOReader with a PIN code.
 
 This work was originally based on the work of yogi81 and their plugin `screenlock_koreader_plugin`.
 
-![alt text][screenshot]
-
-[screenshot]: https://github.com/Lena2309/pinpad_screenlock_plugin/pinpad-screenshot.png "PIN Pad Screenshot"
-
 ## Setup
 
 1. Put `pinpadlockscreen.koplugin` into the `kodreader/plugins` directory.
