@@ -5,25 +5,36 @@ It handles user input, PIN validation, and UI interactions.
 ]]
 
 local Button = require("ui/widget/button")
-local Config = require("config")
 local PinPadButtonDialog = require("ui/pinpadbuttondialog")
 local FrameContainer = require("ui/widget/container/framecontainer")
 local InfoMessage = require("ui/widget/infomessage")
 local UIManager = require("ui/uimanager")
 local _ = require("gettext")
 
-local ENTER_PIN_TEXT = _("Enter your PIN")
+local LOCKED_TEXT = _("Enter your PIN")
+local CONFIRM_CURRENT_CODE_TEXT = _("Enter the current PIN Code")
+local NEW_CODE_TEXT = _("Enter the new PIN Code")
 
 local PinPadDialog = FrameContainer:extend {
-    correct_pin = Config.pin or "1234", -- Default PIN or from a config file
     icon = "lock",
+    stage = "locked", -- "confirm_current_code" or "enter_new_code"
 }
 
 function PinPadDialog:init()
+    self:setDialogText()
     self.pin = ""
-    self.pin_dialog = ENTER_PIN_TEXT
     self.buttons = self:initializeButtons()
     return self
+end
+
+function PinPadDialog:setDialogText()
+    if self.stage == "locked" then
+        self.dialog_text = LOCKED_TEXT
+    elseif self.stage == "confirm_current_code" then
+        self.dialog_text = CONFIRM_CURRENT_CODE_TEXT
+    else
+        self.dialog_text = NEW_CODE_TEXT
+    end
 end
 
 function PinPadDialog:initializeButtons()
@@ -54,14 +65,27 @@ function PinPadDialog:initializeButtons()
 end
 
 function PinPadDialog:showPinPad()
-    self.dialog = PinPadButtonDialog:new {
-        icon = self.icon,
-        title = self.pin_dialog,
-        title_align = "center",
-        use_info_style = false,
-        buttons = self.buttons,
-        dismissable = false,
-    }
+    if self.stage == "locked" then
+        self.dialog = PinPadButtonDialog:new {
+            icon = self.icon,
+            title = self.dialog_text,
+            title_align = "center",
+            use_info_style = false,
+            buttons = self.buttons,
+            dismissable = false,
+        }
+    else
+        self.dialog = PinPadButtonDialog:new {
+            icon = self.icon,
+            title = self.dialog_text,
+            title_align = "center",
+            use_info_style = false,
+            buttons = self.buttons,
+            dismissable = true,
+            override_show_message = true,
+        }
+    end
+
 
     UIManager:show(self.dialog)
 end
@@ -82,33 +106,49 @@ function PinPadDialog:createButton(text, callback)
 end
 
 function PinPadDialog:appendToPin(digit)
-    if self.pin_dialog == ENTER_PIN_TEXT then
-        self.pin_dialog = ""
+    if self.dialog_text == LOCKED_TEXT or self.dialog_text == CONFIRM_CURRENT_CODE_TEXT or self.dialog_text == NEW_CODE_TEXT then
+        self.dialog_text = ""
     end
-    self.pin_dialog = self.pin_dialog .. "*"
+    self.dialog_text = self.dialog_text .. "*"
     self.pin = self.pin .. digit
     self:refreshUI()
 end
 
 function PinPadDialog:onOk()
-    if self.pin == self.correct_pin then
-        self:close()
-        UIManager:show(InfoMessage:new { text = _("Correct PIN, have fun !"), timeout = 1 })
+    if self.stage == "locked" then
+        if self.pin == G_reader_settings:readSetting("pinpadlock_pin_code") then
+            self:close()
+            UIManager:show(InfoMessage:new { text = _("Correct PIN, have fun !"), timeout = 1 })
+        else
+            UIManager:show(InfoMessage:new { text = _("Wrong PIN, try again."), timeout = 1 })
+            self:onCancel()
+        end
+    elseif self.stage == "confirm_current_code" then
+        if self.pin == G_reader_settings:readSetting("pinpadlock_pin_code") then
+            self:close()
+            UIManager:show(InfoMessage:new { text = _("Correct PIN, you may change your PIN Code !"), timeout = 1 })
+            local enterNewCode = PinPadDialog:new { stage = "enter_new_code" }
+            enterNewCode:showPinPad()
+        else
+            UIManager:show(InfoMessage:new { text = _("Wrong PIN, try again."), timeout = 1 })
+            self:onCancel()
+        end
     else
-        UIManager:show(InfoMessage:new { text = _("Wrong PIN, try again."), timeout = 1 })
-        self:onCancel()
+        G_reader_settings:saveSetting("pinpadlock_pin_code", self.pin)
+        self:close()
+        UIManager:show(InfoMessage:new { text = _("PIN Code changed successfully !"), timeout = 1 })
     end
 end
 
 function PinPadDialog:onCancel()
     self.pin = ""
-    self.pin_dialog = ENTER_PIN_TEXT
+    self:setDialogText()
     self:refreshUI()
 end
 
 function PinPadDialog:close()
     self.pin = ""
-    self.pin_dialog = ENTER_PIN_TEXT
+    self:setDialogText()
     UIManager:close(self.dialog)
 end
 

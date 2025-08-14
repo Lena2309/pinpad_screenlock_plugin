@@ -8,12 +8,12 @@ with the primary modification in the `init` function.
 local Blitbuffer = require("ffi/blitbuffer")
 local ButtonTable = require("ui/widget/buttontable")
 local CenterContainer = require("ui/widget/container/centercontainer")
-local Config = require("config")
 local Device = require("device")
 local Font = require("ui/font")
 local FocusManager = require("ui/widget/focusmanager")
 local FrameContainer = require("ui/widget/container/framecontainer")
 local Geom = require("ui/geometry")
+local GestureRange = require("ui/gesturerange")
 local IconWidget = require("ui/widget/iconwidget")
 local LineWidget = require("ui/widget/linewidget")
 local MovableContainer = require("ui/widget/container/movablecontainer")
@@ -24,6 +24,7 @@ local UIManager = require("ui/uimanager")
 local VerticalGroup = require("ui/widget/verticalgroup")
 local VerticalSpan = require("ui/widget/verticalspan")
 local Screen = Device.screen
+local util = require("util")
 
 local PinpadButtonDialog = FocusManager:extend {
     buttons = nil,
@@ -44,9 +45,7 @@ local PinpadButtonDialog = FocusManager:extend {
     info_padding = Size.padding.default,
     info_margin = Size.margin.default,
     dismissable = true,
-    custom_message = Config.custom_message or nil,
-    custom_message_position = Config.custom_message_position or nil,
-    custom_message_alignement = Config.custom_message_alignement or nil,
+    override_show_message = false, -- will prevent showing custom lock message even if enabled (specific for changing PIN Code)
 }
 
 function PinpadButtonDialog:init()
@@ -54,6 +53,31 @@ function PinpadButtonDialog:init()
         self.width_factor = 2 / 3
     end
     self.width = math.floor(math.min(Screen:getWidth(), Screen:getHeight()) * self.width_factor)
+
+    if self.dismissable then
+        if Device:hasKeys() then
+            local back_group = util.tableDeepCopy(Device.input.group.Back)
+            if Device:hasFewKeys() then
+                table.insert(back_group, "Left")
+                self.key_events.Close = { { back_group } }
+            else
+                table.insert(back_group, "Menu")
+                self.key_events.Close = { { back_group } }
+            end
+        end
+        if Device:isTouchDevice() then
+            self.ges_events.TapClose = {
+                GestureRange:new {
+                    ges = "tap",
+                    range = Geom:new {
+                        x = 0, y = 0,
+                        w = Screen:getWidth(),
+                        h = Screen:getHeight(),
+                    }
+                }
+            }
+        end
+    end
 
     local title_face
     if self.use_info_style then
@@ -98,38 +122,43 @@ function PinpadButtonDialog:init()
     }
 
     local content
-    if self.custom_message then
-        self.custom_message = self.custom_message:gsub("\\n", "\n")
-        local custom_message_widget = TextBoxWidget:new {
-            text = self.custom_message,
+    if G_reader_settings:isTrue("pinpadlock_show_message") and not self.override_show_message then
+        local lock_message = G_reader_settings:readSetting("pinpadlock_message")
+        lock_message = lock_message:gsub("\\n", "\n") -- enabling jumping lines in the message
+
+        local lock_message_alignment = G_reader_settings:readSetting("pinpadlock_message_alignment")
+        local lock_message_position = G_reader_settings:readSetting("pinpadlock_message_position")
+
+        local lock_message_widget = TextBoxWidget:new {
+            text = lock_message,
             face = title_face,
             width = self.width,
-            alignment = self.custom_message_alignement,
+            alignment = lock_message_alignment,
         }
 
         -- If the custom message ends up being too tall and makes the Pin Pad taller than the screen,
         -- wrap it inside a ScrollableContainer
         local max_height = self.buttontable:getSize().h + 3 * text_pin_content:getSize().h + Size.line.medium
         local height = self.buttontable:getSize().h + text_pin_content:getSize().h + Size.line.medium +
-            custom_message_widget:getSize().h
+            lock_message_widget:getSize().h
         if height > max_height then
             local scroll_height = 3 * text_pin_content:getSize().h
 
-            custom_message_widget = ScrollTextWidget:new {
-                text = self.custom_message,
+            lock_message_widget = ScrollTextWidget:new {
+                text = lock_message,
                 face = title_face,
                 width = self.width,
-                alignment = self.custom_message_alignement,
+                alignment = lock_message_alignment,
                 dialog = self,
                 height = scroll_height,
             }
         end
 
-        if self.custom_message_position == "top" then
+        if lock_message_position == "top" then
             content = VerticalGroup:new {
                 align = "center",
                 aesthetic_space,
-                custom_message_widget,
+                lock_message_widget,
                 aesthetic_space,
                 separator,
                 aesthetic_space,
@@ -138,7 +167,7 @@ function PinpadButtonDialog:init()
                 separator,
                 self.buttontable,
             }
-        elseif self.custom_message_position == "center" then
+        elseif lock_message_position == "middle" then
             content = VerticalGroup:new {
                 align = "center",
                 aesthetic_space,
@@ -146,7 +175,7 @@ function PinpadButtonDialog:init()
                 aesthetic_space,
                 separator,
                 aesthetic_space,
-                custom_message_widget,
+                lock_message_widget,
                 aesthetic_space,
                 separator,
                 self.buttontable,
@@ -161,7 +190,7 @@ function PinpadButtonDialog:init()
                 self.buttontable,
                 separator,
                 aesthetic_space,
-                custom_message_widget,
+                lock_message_widget,
                 aesthetic_space,
             }
         end
