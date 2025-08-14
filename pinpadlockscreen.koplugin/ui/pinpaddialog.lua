@@ -56,10 +56,10 @@ function PinPadDialog:initializeButtons()
             self:createButton("9", function() ref_self:appendToPin("9") end),
         },
         {
-            self:createButton("Cancel", function() ref_self:onCancel() end),
+            self:createButton("Cancel", function() ref_self:onDelete() end, function() ref_self:onCancel() end),
             self:createButton("0", function() ref_self:appendToPin("0") end),
             self:createButton("OK", function() ref_self:onOk() end),
-        },
+        }
     }
     return buttons
 end
@@ -97,10 +97,11 @@ function PinPadDialog:refreshUI()
     self:showPinPad()
 end
 
-function PinPadDialog:createButton(text, callback)
+function PinPadDialog:createButton(text, callback, hold_callback)
     local button = Button:new {
         text = text,
         callback = callback,
+        hold_callback = hold_callback,
     }
     return button
 end
@@ -138,6 +139,20 @@ function PinPadDialog:onOk()
         self:close()
         UIManager:show(InfoMessage:new { text = _("PIN Code changed successfully !"), timeout = 1 })
     end
+end
+
+function PinPadDialog:onDelete()
+    if #self.pin > 1 then
+        self.pin = self.pin:sub(1, #self.pin - 1)
+    elseif #self.pin == 1 then
+        self.pin = ""
+    end
+    if #self.dialog_text == 1 then -- display default text back
+        self:setDialogText()
+    elseif not (self.dialog_text == LOCKED_TEXT or self.dialog_text == CONFIRM_CURRENT_CODE_TEXT or self.dialog_text == NEW_CODE_TEXT) then
+        self.dialog_text = self.dialog_text:sub(1, #self.dialog_text - 1)
+    end
+    self:refreshUI()
 end
 
 function PinPadDialog:onCancel()
