@@ -6,11 +6,10 @@ with the primary modification in the `init` function.
 ]]
 
 local Blitbuffer = require("ffi/blitbuffer")
+local ButtonDialog = require("ui/widget/buttondialog")
 local ButtonTable = require("ui/widget/buttontable")
 local CenterContainer = require("ui/widget/container/centercontainer")
 local Device = require("device")
-local Font = require("ui/font")
-local FocusManager = require("ui/widget/focusmanager")
 local FrameContainer = require("ui/widget/container/framecontainer")
 local Geom = require("ui/geometry")
 local GestureRange = require("ui/gesturerange")
@@ -20,31 +19,12 @@ local MovableContainer = require("ui/widget/container/movablecontainer")
 local ScrollTextWidget = require("ui/widget/scrolltextwidget")
 local Size = require("ui/size")
 local TextBoxWidget = require("ui/widget/textboxwidget")
-local UIManager = require("ui/uimanager")
 local VerticalGroup = require("ui/widget/verticalgroup")
 local VerticalSpan = require("ui/widget/verticalspan")
 local Screen = Device.screen
 local util = require("util")
 
-local PinpadButtonDialog = FocusManager:extend {
-    buttons = nil,
-    width = nil,
-    width_factor = nil,
-    shrink_unneeded_width = false,
-    shrink_min_width = nil,
-    tap_close_callback = nil,
-    alpha = nil,
-    rows_per_page = nil,
-    title = nil,
-    title_align = "left",
-    title_face = Font:getFace("x_smalltfont"),
-    title_padding = Size.padding.large,
-    title_margin = Size.margin.title,
-    use_info_style = true,
-    info_face = Font:getFace("infofont"),
-    info_padding = Size.padding.default,
-    info_margin = Size.margin.default,
-    dismissable = true,
+local PinpadButtonDialog = ButtonDialog:extend {
     override_show_message = false, -- will prevent showing custom lock message even if enabled (specific for changing PIN Code)
 }
 
@@ -227,83 +207,6 @@ function PinpadButtonDialog:init()
         dimen = Screen:getSize(),
         self.movable,
     }
-end
-
-function PinpadButtonDialog:getContentSize()
-    return self.movable.dimen
-end
-
-function PinpadButtonDialog:getButtonById(id)
-    return self.buttontable:getButtonById(id)
-end
-
-function PinpadButtonDialog:getScrolledOffset()
-    if self.cropping_widget then
-        return self.cropping_widget:getScrolledOffset()
-    end
-end
-
-function PinpadButtonDialog:setScrolledOffset(offset_point)
-    if offset_point and self.cropping_widget then
-        return self.cropping_widget:setScrolledOffset(offset_point)
-    end
-end
-
-function PinpadButtonDialog:setTitle(title)
-    self.title = title
-    self:free()
-    self:init()
-    UIManager:setDirty("all", "ui")
-end
-
-function PinpadButtonDialog:onShow()
-    UIManager:setDirty(self, function()
-        return "ui", self.movable.dimen
-    end)
-end
-
-function PinpadButtonDialog:onCloseWidget()
-    UIManager:setDirty(nil, function()
-        return "flashui", self.movable.dimen
-    end)
-end
-
-function PinpadButtonDialog:onClose()
-    if self.tap_close_callback then
-        self.tap_close_callback()
-    end
-    UIManager:close(self)
-    return true
-end
-
-function PinpadButtonDialog:onTapClose(arg, ges)
-    if ges.pos:notIntersectWith(self.movable.dimen) then
-        self:onClose()
-    end
-    return true
-end
-
-function PinpadButtonDialog:paintTo(...)
-    FocusManager.paintTo(self, ...)
-    self.dimen = self.movable.dimen
-end
-
-function PinpadButtonDialog:onFocusMove(args)
-    local ret = FocusManager.onFocusMove(self, args)
-
-    if self.cropping_widget then
-        local focus = self:getFocusItem()
-        if self.dimen and focus and focus.dimen then
-            local button_y_offset = focus.dimen.y - self.dimen.y - self.top_to_content_offset
-            self.cropping_widget:_scrollBy(0, button_y_offset, true)
-        end
-    end
-
-    return ret
-end
-
-function PinpadButtonDialog:_onPageScrollToRow(row)
-    self:moveFocusTo(1, row)
 end
 
 return PinpadButtonDialog
