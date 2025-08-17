@@ -306,6 +306,9 @@ function PinPadDialog:onOk()
             G_reader_settings:saveSetting("current_tries_number", 0)
             G_reader_settings:saveSetting("block_start_time", 0)
         else
+            if self.pin == "" then
+                return -- ignore button press if pin is empty
+            end
             local current_tries = G_reader_settings:readSetting("current_tries_number")
             if (current_tries + 1) >= MAX_TRIES_LIMIT then
                 G_reader_settings:saveSetting("block_start_time", os.time())
@@ -333,11 +336,14 @@ function PinPadDialog:onOk()
 end
 
 function PinPadDialog:onDelete()
-    if #self.pin > 1 then
-        self.pin = self.pin:sub(1, #self.pin - 1)
+    if self.pin == "" then
+        return -- ignore button press if pin is empty
     elseif #self.pin == 1 then
         self.pin = ""
+    else
+        self.pin = self.pin:sub(1, #self.pin - 1)
     end
+
     if #self.dialog_text == 1 then -- display default text back
         self:setDialogText()
     elseif not (self.dialog_text == LOCKED_TEXT or self.dialog_text == CONFIRM_CURRENT_CODE_TEXT or self.dialog_text == NEW_CODE_TEXT) then
@@ -347,6 +353,9 @@ function PinPadDialog:onDelete()
 end
 
 function PinPadDialog:onCancel()
+    if self.pin == "" then
+        return -- ignore button press if pin is empty
+    end
     self:reset()
     self:refreshUI()
 end
