@@ -15,10 +15,6 @@ The default code is "1234". You can also add a custom message to display with th
 
 ## Future work
 
-* For now, the PIN pad will appear directly on the display showed when the device was locked.
-Which means the document's page you were on before locking your device will be visible.
-I plan on making the PIN pad appear on the sceensaver background.
-
 * When launching KOReader (on a jailbroken kindle), PIN Pad does not appear right away, leaving the possibility to deactivate or reset the lock.
 
 **Note:** I do not know when I'll be implementing these features. Also, my work could probably be optimized so I'm open to any new ideas and remarks.
@@ -30,5 +26,6 @@ I plan on making the PIN pad appear on the sceensaver background.
 * Using dynamic persistence instead of hardcoded variables.
 * Cancel button deletes one digits when entering PIN Code, hold it to delete everything.
 * 3 tries limit before a 30 seconds timeout.
+* PIN Pad appears on the screensaver background (without sleep message)
 
 :)
