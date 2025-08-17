@@ -256,11 +256,6 @@ function PinPadDialog:showPinPad()
             text = _("Too many failed attempts. Wait " .. self.remaining_block_time .. " seconds."),
             timeout = self.remaining_block_time,
             dismissable = false,
-            dismiss_callback = function()
-                UIManager:scheduleIn(0, function()
-                    self:refreshUI()
-                end)
-            end,
         }
         UIManager:show(self.blocking_dialog)
     end
