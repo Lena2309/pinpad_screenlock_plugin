@@ -4,6 +4,9 @@ local InputDialog = require("ui/widget/inputdialog")
 local PinPadDialog = require("ui/pinpaddialog")
 local UIManager = require("ui/uimanager")
 local _ = require("gettext")
+local http = require("socket.http")
+local ltn12 = require("ltn12")
+local json = require("dkjson")
 
 local PinPadMenuEntry = {}
 
@@ -75,6 +78,82 @@ function PinPadMenuEntry:resetPinCode()
         end
     }
     UIManager:show(confirmBox)
+end
+
+-- Parse a version string like "v1.2.3"
+local function parseVersion(version)
+    version = version:gsub("^v", "")
+
+    local major, minor, patch, suffix = version:match("^(%d+)%.(%d+)%.(%d+)$")
+    return {
+        major = tonumber(major) or 0,
+        minor = tonumber(minor) or 0,
+        patch = tonumber(patch) or 0
+    }
+end
+
+-- Returns -1 if a < b, 0 if equal, 1 if a > b
+local function compareVersions(a, b)
+    if a.major ~= b.major then
+        return a.major > b.major and 1 or -1
+    elseif a.minor ~= b.minor then
+        return a.minor > b.minor and 1 or -1
+    else
+        return a.patch > b.patch and 1 or -1
+    end
+end
+
+function PinPadMenuEntry:checkForUpdates()
+    local meta = dofile("plugins/pinpadlockscreen.koplugin/_meta.lua")
+    local local_version = meta.version or "unknown"
+
+    local response_body = {}
+    local ok, status = http.request {
+        url = "https://api.github.com/repos/Lena2309/pinpad_screenlock_plugin/releases/latest",
+        sink = ltn12.sink.table(response_body),
+        redirect = true
+    }
+
+    if not ok or status ~= 200 then
+        UIManager:show(InfoMessage:new {
+            text = _("Unable to check for updates. Make sure your device is connected to the Internet."),
+            timeout = 3,
+        })
+        return
+    end
+
+    local body = table.concat(response_body)
+    local data, pos, err = json.decode(body, 1, nil)
+
+    if not data or not data.tag_name then
+        UIManager:show(InfoMessage:new {
+            text = _("Error parsing GitHub release info."),
+            timeout = 3,
+        })
+        return
+    end
+
+    local remote_version = data.tag_name
+    local cmp = compareVersions(parseVersion(local_version), parseVersion(remote_version))
+    if cmp < 0 then
+        UIManager:show(InfoMessage:new {
+            text = _("New version available: ") .. remote_version ..
+                _("\nYou are running: ") .. local_version,
+            timeout = 5,
+        })
+    else
+        if cmp > 0 then
+            UIManager:show(InfoMessage:new {
+                text = _("You’re ahead of the official release.\nLatest official version: " .. remote_version),
+                timeout = 5,
+            })
+        else
+            UIManager:show(InfoMessage:new {
+                text = _("You are up to date!"),
+                timeout = 3,
+            })
+        end
+    end
 end
 
 return PinPadMenuEntry

@@ -166,7 +166,14 @@ function ScreenLock:addToMainMenu(menu_items)
                     PinPadMenuEntry:genRadioMenuItem(_("Center"), "pinpadlock_message_alignment", "center"),
                     PinPadMenuEntry:genRadioMenuItem(_("Right"), "pinpadlock_message_alignment", "right"),
                 },
+                separator = true,
             },
+            {
+                text = _("Check for updates"),
+                callback = function()
+                    PinPadMenuEntry:checkForUpdates()
+                end,
+            }
         }
     }
 end
