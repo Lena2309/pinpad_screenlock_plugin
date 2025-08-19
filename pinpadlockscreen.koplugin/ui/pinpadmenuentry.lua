@@ -82,9 +82,7 @@ end
 
 -- Parse a version string like "v1.2.3"
 local function parseVersion(version)
-    version = version:gsub("^v", "")
-
-    local major, minor, patch, suffix = version:match("^(%d+)%.(%d+)%.(%d+)$")
+    local major, minor, patch = version:match("^v(%d+)%.(%d+)%.(%d+)$")
     return {
         major = tonumber(major) or 0,
         minor = tonumber(minor) or 0,
@@ -93,14 +91,27 @@ local function parseVersion(version)
 end
 
 -- Returns -1 if a < b, 0 if equal, 1 if a > b
-local function compareVersions(a, b)
-    if a.major ~= b.major then
-        return a.major > b.major and 1 or -1
-    elseif a.minor ~= b.minor then
-        return a.minor > b.minor and 1 or -1
-    else
-        return a.patch > b.patch and 1 or -1
+local function compareVersions(local_version, remote_version)
+    if local_version.major ~= remote_version.major then
+        if local_version.major > remote_version.major then
+            return 1
+        else
+            return -1
+        end
+    elseif local_version.minor ~= remote_version.minor then
+        if local_version.minor > remote_version.minor then
+            return 1
+        else
+            return -1
+        end
+    elseif local_version.patch ~= remote_version.patch then
+        if local_version.patch > remote_version.patch then
+            return 1
+        else
+            return -1
+        end
     end
+    return 0
 end
 
 function PinPadMenuEntry:checkForUpdates()
