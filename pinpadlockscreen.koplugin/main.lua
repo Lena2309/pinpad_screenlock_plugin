@@ -5,12 +5,9 @@ Description: implements a screen lock mechanism for KOReader
 using a PIN pad interface. Also adds a menu entry in Settings -> Screen
 ]]
 
-local ConfirmBox = require("ui/widget/confirmbox")
 local Dispatcher = require("dispatcher")
-local InfoMessage = require("ui/widget/infomessage")
-local InputDialog = require("ui/widget/inputdialog")
 local PinPadDialog = require("ui/pinpaddialog")
-local UIManager = require("ui/uimanager")
+local PinPadMenuEntry = require("ui/pinpadmenuentry")
 local WidgetContainer = require("ui/widget/container/widgetcontainer")
 local _ = require("gettext")
 
@@ -71,6 +68,7 @@ end
 function ScreenLock:onResume()
     if self.pinPadDialog then
         self.pinPadDialog:close()
+        self.pinPadDialog = nil
     end
     if not self.locked and G_reader_settings:isTrue("pinpadlock_activated") then
         self:lockScreen()
@@ -99,76 +97,6 @@ end
 -- MAIN MENU ENTRY
 ------------------------------------------------------------------------------
 
-local function setMessage()
-    local lock_message = G_reader_settings:readSetting("pinpadlock_message")
-    local input_dialog
-    input_dialog = InputDialog:new {
-        title = _("PIN pad lock message"),
-        description = _("Enter a custom message to be displayed on the PIN pad lock."),
-        input = lock_message,
-        buttons = {
-            {
-                {
-                    text = _("Cancel"),
-                    id = "close",
-                    callback = function()
-                        UIManager:close(input_dialog)
-                    end,
-                },
-                {
-                    text = _("Set message"),
-                    is_enter_default = true,
-                    callback = function()
-                        G_reader_settings:saveSetting("pinpadlock_message", input_dialog:getInputText())
-                        UIManager:close(input_dialog)
-                    end,
-                },
-            },
-        },
-    }
-    UIManager:show(input_dialog)
-    input_dialog:onShowKeyboard()
-end
-
-local function showMessageEnabled()
-    return G_reader_settings:isTrue("pinpadlock_show_message")
-end
-
-local function genRadioMenuItem(text, setting, value)
-    return {
-        text = text,
-        checked_func = function()
-            return G_reader_settings:readSetting(setting) == value
-        end,
-        callback = function()
-            G_reader_settings:saveSetting(setting, value)
-        end,
-        radio = true,
-    }
-end
-
-local changePinCode = function()
-    local confirmCurrentCode = PinPadDialog:new { stage = "confirm_current_code" }
-    confirmCurrentCode:showPinPad()
-end
-
-local resetPinCode = function()
-    local confirmBox
-    confirmBox = ConfirmBox:new {
-        text = _("Do you really want to reset the PIN code to \"1234\" ?"),
-        ok_text = _("Yes"),
-        ok_callback = function()
-            G_reader_settings:saveSetting("pinpadlock_pin_code", "1234")
-            UIManager:close(confirmBox)
-            UIManager:show(InfoMessage:new { text = _("PIN Code resetted successfully."), timeout = 1 })
-        end,
-        cancel_callback = function()
-            UIManager:close(confirmBox)
-        end
-    }
-    UIManager:show(confirmBox)
-end
-
 function ScreenLock:addToMainMenu(menu_items)
     menu_items.pinpad = {
         text = _("PIN Pad Lock"),
@@ -187,20 +115,20 @@ function ScreenLock:addToMainMenu(menu_items)
             {
                 text = _("Change PIN Code"),
                 callback = function()
-                    changePinCode()
+                    PinPadMenuEntry:changePinCode()
                 end
             },
             {
                 text = _("Reset PIN Code"),
                 callback = function()
-                    resetPinCode()
+                    PinPadMenuEntry:resetPinCode()
                 end,
                 separator = true
             },
             {
                 text = _("Add custom message to lock"),
                 checked_func = function()
-                    return showMessageEnabled()
+                    return PinPadMenuEntry:showMessageEnabled()
                 end,
                 callback = function()
                     G_reader_settings:toggle("pinpadlock_show_message")
@@ -210,33 +138,33 @@ function ScreenLock:addToMainMenu(menu_items)
             {
                 text = _("Edit lock message"),
                 enabled_func = function()
-                    return showMessageEnabled()
+                    return PinPadMenuEntry:showMessageEnabled()
                 end,
                 keep_menu_open = true,
                 callback = function()
-                    setMessage()
+                    PinPadMenuEntry:setMessage()
                 end,
             },
             {
                 text = _("Message position"),
                 enabled_func = function()
-                    return showMessageEnabled()
+                    return PinPadMenuEntry:showMessageEnabled()
                 end,
                 sub_item_table = {
-                    genRadioMenuItem(_("Top"), "pinpadlock_message_position", "top"),
-                    genRadioMenuItem(_("Middle"), "pinpadlock_message_position", "middle"),
-                    genRadioMenuItem(_("Bottom"), "pinpadlock_message_position", "bottom"),
+                    PinPadMenuEntry:genRadioMenuItem(_("Top"), "pinpadlock_message_position", "top"),
+                    PinPadMenuEntry:genRadioMenuItem(_("Middle"), "pinpadlock_message_position", "middle"),
+                    PinPadMenuEntry:genRadioMenuItem(_("Bottom"), "pinpadlock_message_position", "bottom"),
                 },
             },
             {
                 text = _("Message alignment"),
                 enabled_func = function()
-                    return showMessageEnabled()
+                    return PinPadMenuEntry:showMessageEnabled()
                 end,
                 sub_item_table = {
-                    genRadioMenuItem(_("Left"), "pinpadlock_message_alignment", "left"),
-                    genRadioMenuItem(_("Center"), "pinpadlock_message_alignment", "center"),
-                    genRadioMenuItem(_("Right"), "pinpadlock_message_alignment", "right"),
+                    PinPadMenuEntry:genRadioMenuItem(_("Left"), "pinpadlock_message_alignment", "left"),
+                    PinPadMenuEntry:genRadioMenuItem(_("Center"), "pinpadlock_message_alignment", "center"),
+                    PinPadMenuEntry:genRadioMenuItem(_("Right"), "pinpadlock_message_alignment", "right"),
                 },
             },
         }
