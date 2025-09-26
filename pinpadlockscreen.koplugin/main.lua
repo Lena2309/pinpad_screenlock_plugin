@@ -82,7 +82,7 @@ end
 function ScreenLock:lockScreen()
     self.locked = true
     self.pinPadDialog = PinPadDialog:init()
-    self.pinPadDialog:showPinPad()
+    self.pinPadDialog:firstShowPinPad()
 end
 
 ------------------------------------------------------------------------------
