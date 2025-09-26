@@ -261,6 +261,40 @@ function PinPadDialog:showPinPad()
     end
 end
 
+function PinPadDialog:firstShowPinPad()
+    if self.stage == "locked" then
+        self.dialog = PinPadButtonDialog:new {
+            icon = self.icon,
+            title = self.dialog_text,
+            title_align = "center",
+            use_info_style = false,
+            buttons = self.buttons,
+            dismissable = false,
+        }
+    else
+        self.dialog = PinPadButtonDialog:new {
+            icon = self.icon,
+            title = self.dialog_text,
+            title_align = "center",
+            use_info_style = false,
+            buttons = self.buttons,
+            dismissable = true,
+            override_show_message = true,
+        }
+    end
+    UIManager:scheduleIn(1, self.dialog)
+    
+    -- overlay the blocking message if needed
+    if self.stage == "locked" and self:isBlocked() then
+        self.blocking_dialog = InfoMessage:new {
+            text = _("Too many failed attempts. Wait " .. self.remaining_block_time .. " seconds."),
+            timeout = self.remaining_block_time,
+            dismissable = false,
+        }
+        UIManager:scheduleIn(1, self.blocking_dialog)
+    end
+end
+
 function PinPadDialog:reset()
     self.pin = ""
     self:setDialogText()
