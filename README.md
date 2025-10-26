@@ -1,8 +1,12 @@
 # pinpad_screenlock_plugin
 
+[![MIT License](https://img.shields.io/badge/License-MIT-orange.svg)](https://opensource.org/licenses/MIT)
+
 A small plugin to enable locking the screen of KOReader with a PIN code.
 
 This work was originally based on the work of yogi81 and their plugin `screenlock_koreader_plugin`.
+
+![Lock Screen Preview](screenshots/lockscreen.png)
 
 ## Setup
 
@@ -10,6 +14,8 @@ This work was originally based on the work of yogi81 and their plugin `screenloc
 2. Put `lock.svg` or your own icon (with this specific name) into the `koreader/resources/icons/mdlight` directory.
 3. Activate and change your password through the menu in Settings -> Screen -> PIN Pad Lock.
 The default code is "1234". You can also add a custom message to display with the pin pad (e.g. contact details) and change its position and text alignment. You can also jump lines using "\n" in the message.
+
+![Menu Entry Screenshot](screenshots/menu_entry.png)
 
 **Note:** There's no limit to the number of digits your code may contain, but good luck if you forget your code (you'll have to dig into your memory or KOReader to find it back).
 
