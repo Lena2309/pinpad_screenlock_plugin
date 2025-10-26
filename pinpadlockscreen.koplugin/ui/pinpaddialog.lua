@@ -305,6 +305,7 @@ function PinPadDialog:onOk()
             UIManager:show(InfoMessage:new { text = _("Correct PIN, have fun !"), timeout = 2 })
             G_reader_settings:saveSetting("current_tries_number", 0)
             G_reader_settings:saveSetting("block_start_time", 0)
+            G_reader_settings:makeFalse("suspended_device")
         else
             if self.pin == "" then
                 return -- ignore button press if pin is empty
