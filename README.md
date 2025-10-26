@@ -37,7 +37,7 @@ The default code is "1234". You can also add a custom message to display with th
 
 ## Future work
 
-* Currently no idea, do not hesitate to bring up issues !
+* Currently have no idea, do not hesitate to bring up issues !
 
 **Note:** I do not know when I'll be implementing these features. Also, my work could probably be optimized so I'm open to any new ideas and remarks.
 
