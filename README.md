@@ -10,7 +10,7 @@ This work was originally based on the work of yogi81 and their plugin `screenloc
 
 ## Setup
 
-1. Put `pinpadlockscreen.koplugin` into the `kodreader/plugins` directory.
+1. Put `pinpadlockscreen.koplugin` into the `koreader/plugins` directory.
 2. Put `lock.svg` or your own icon (with this specific name) into the `koreader/resources/icons/mdlight` directory.
 3. Activate and change your password through the menu in Settings -> Screen -> PIN Pad Lock.
 The default code is "1234". You can also add a custom message to display with the pin pad (e.g. contact details) and change its position and text alignment. You can also jump lines using "\n" in the message.
