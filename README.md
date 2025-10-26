@@ -19,6 +19,22 @@ The default code is "1234". You can also add a custom message to display with th
 
 **Note:** There's no limit to the number of digits your code may contain, but good luck if you forget your code (you'll have to dig into your memory or KOReader to find it back).
 
+## Features and Gestures
+
+* `Manage PIN Code`:
+  * `Change PIN Code` will allow you to change your code after entering your current one.
+  * `Reset PIN Code` will reset the code at `1234`.
+
+* `PIN pad lock message` allows you to manage the custom message you can add to the PIN Pad. This is optional.
+
+* `Cancel` button: a quick tap will delete a digit of the code you entered, a long hold will delete every digits.
+
+* You have three tries before the device is locked for 30 seconds and you can not interact with it.
+
+* The pad will appear based on the current screensaver setting you're using.
+
+* Check for updates directly from your device, without having to open GitHub. This feature needs the device to be connected to Internet.
+
 ## Future work
 
 * When launching KOReader (on a jailbroken kindle), PIN Pad does not appear right away, leaving the possibility to deactivate or reset the lock.
