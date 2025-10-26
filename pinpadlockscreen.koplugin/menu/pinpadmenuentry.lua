@@ -1,3 +1,8 @@
+--[[
+Author: Lena2309
+Description: Execute actions when tapping on a menu entry item
+]]
+
 local ConfirmBox = require("ui/widget/confirmbox")
 local InfoMessage = require("ui/widget/infomessage")
 local InputDialog = require("ui/widget/inputdialog")

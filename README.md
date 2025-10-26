@@ -37,7 +37,7 @@ The default code is "1234". You can also add a custom message to display with th
 
 ## Future work
 
-* When launching KOReader (on a jailbroken kindle), PIN Pad does not appear right away, leaving the possibility to deactivate or reset the lock.
+* Currently no idea, do not hesitate to bring up issues !
 
 **Note:** I do not know when I'll be implementing these features. Also, my work could probably be optimized so I'm open to any new ideas and remarks.
 
@@ -49,5 +49,6 @@ The default code is "1234". You can also add a custom message to display with th
 * Cancel button deletes one digits when entering PIN Code, hold it to delete everything.
 * 3 tries limit before a 30 seconds timeout.
 * PIN Pad appears on the screensaver background (without sleep message)
+* When launching KOReader (on a jailbroken kindle), PIN Pad now appears right away, not leaving the possibility to deactivate or reset the lock.
 
 :)
