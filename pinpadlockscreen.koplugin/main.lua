@@ -1,5 +1,5 @@
 --[[
-Author: yogi81 (original inspiration and main skeleton), Lena2309 (adaptation and improvements), oleasto (on boot execution)
+Author: yogi81 (original inspiration and main skeleton), Lena2309 (adaptation and improvements), oleasteo (on boot execution)
 Inspiration and original skeleton from `https://github.com/yogi81/screenlock_koreader_plugin/tree/main`
 On Boot Execution from `https://github.com/oleasteo/koreader-screenlockpin/tree/main`
 Description: implements a screen lock mechanism for KOReader

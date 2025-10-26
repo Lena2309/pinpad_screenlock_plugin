@@ -1,5 +1,5 @@
 --[[
-Author: oleasto
+Author: oleasteo
 Original from `https://github.com/oleasteo/koreader-screenlockpin/tree/main`
 Description: Allows to display the screenlock PIN when the device is booted
 ]]
