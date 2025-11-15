@@ -21,6 +21,8 @@ local util = require("util")
 local _ = require("gettext")
 local Screen = Device.screen
 
+local DGENERIC_ICON_SIZE = G_defaults:readSetting("DGENERIC_ICON_SIZE")
+
 local LOCKED_TEXT = _("Enter your PIN")
 local CONFIRM_CURRENT_CODE_TEXT = _("Enter the current PIN Code")
 local NEW_CODE_TEXT = _("Enter the new PIN Code")
@@ -39,8 +41,8 @@ if G_reader_settings:hasNot("currently_blocked") then
 end
 
 local PinPadDialog = FrameContainer:extend {
-    icon = "lock",
     stage = "locked", -- "confirm_current_code" or "enter_new_code"
+    icon_size = Screen:scaleBySize(DGENERIC_ICON_SIZE) * 1.25,
 }
 
 function PinPadDialog:init()
@@ -228,24 +230,44 @@ function PinPadDialog:isBlocked()
 end
 
 function PinPadDialog:showPinPad()
+    local currentFileSource = debug.getinfo(1, "S").source
+    local plugin_dir
+    if currentFileSource:find("^@") then
+        plugin_dir = currentFileSource:gsub("^@(.*)/[^/]*", "%1")
+    end
+
     if self.stage == "locked" then
         self.dialog = PinPadButtonDialog:new {
-            icon = self.icon,
             title = self.dialog_text,
             title_align = "center",
             use_info_style = false,
             buttons = self.buttons,
             dismissable = false,
+            ImageWidget:new {
+                file = plugin_dir .. "/icons/lock.svg",
+                alpha = true,
+                width = self.icon_size,
+                height = self.icon_size,
+                scale_factor = 0,
+                original_in_nightmode = false,
+            }
         }
     else
         self.dialog = PinPadButtonDialog:new {
-            icon = self.icon,
             title = self.dialog_text,
             title_align = "center",
             use_info_style = false,
             buttons = self.buttons,
             dismissable = true,
             override_show_message = true,
+            ImageWidget:new {
+                file = plugin_dir .. "/icons/lock.svg",
+                alpha = true,
+                width = self.icon_size,
+                height = self.icon_size,
+                scale_factor = 0,
+                original_in_nightmode = false,
+            }
         }
     end
     UIManager:show(self.dialog)

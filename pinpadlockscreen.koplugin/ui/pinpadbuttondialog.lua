@@ -13,7 +13,7 @@ local Device = require("device")
 local FrameContainer = require("ui/widget/container/framecontainer")
 local Geom = require("ui/geometry")
 local GestureRange = require("ui/gesturerange")
-local IconWidget = require("ui/widget/iconwidget")
+local ImageWidget = require("ui/widget/imagewidget")
 local LineWidget = require("ui/widget/linewidget")
 local MovableContainer = require("ui/widget/container/movablecontainer")
 local ScrollTextWidget = require("ui/widget/scrolltextwidget")
@@ -23,6 +23,8 @@ local VerticalGroup = require("ui/widget/verticalgroup")
 local VerticalSpan = require("ui/widget/verticalspan")
 local Screen = Device.screen
 local util = require("util")
+
+local DGENERIC_ICON_SIZE = G_defaults:readSetting("DGENERIC_ICON_SIZE")
 
 local PinpadButtonDialog = ButtonDialog:extend {
     override_show_message = false, -- will prevent showing custom lock message even if enabled (specific for changing PIN Code)
@@ -66,12 +68,22 @@ function PinpadButtonDialog:init()
         title_face = self.title_face
     end
 
+    local currentFileSource = debug.getinfo(1, "S").source
+    local plugin_dir
+    if currentFileSource:find("^@") then
+        plugin_dir = currentFileSource:gsub("^@(.*)/[^/]*", "%1")
+    end
+
     local aesthetic_space = VerticalSpan:new { width = Size.margin.default + Size.padding.default }
     local text_pin_content = VerticalGroup:new {
         align = "center",
-        IconWidget:new {
-            icon = self.icon,
+        ImageWidget:new {
+            file = plugin_dir .. "/icons/lock.svg",
             alpha = true,
+            width = Screen:scaleBySize(DGENERIC_ICON_SIZE) * 1.25,
+            height = Screen:scaleBySize(DGENERIC_ICON_SIZE) * 1.25,
+            scale_factor = 0,
+            original_in_nightmode = false,
         },
         aesthetic_space,
         VerticalGroup:new {
