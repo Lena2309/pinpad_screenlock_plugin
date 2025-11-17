@@ -10,7 +10,7 @@ This work was originally based on the work of yogi81 and their plugin `screenloc
 
 ## Setup
 
-1. Put `pinpadlockscreen.koplugin` into the `koreader/plugins` directory.
+1. Put the latest release of `pinpadlockscreen.koplugin` into the `koreader/plugins` directory.
 2. Activate and change your password through the menu in Settings -> Screen -> PIN Pad Lock.
 The default code is "1234". You can also add a custom message to display with the pin pad (e.g. contact details) and change its position and text alignment. You can also jump lines using "\n" in the message.
 
@@ -25,21 +25,23 @@ The default code is "1234". You can also add a custom message to display with th
 
 - `Manage PIN Code`:
   - `Change PIN Code` will allow you to change your code after entering your current one.
-  - `Reset PIN Code` will reset the code at `1234`.
+  - `Reset PIN Code` will reset the code at `1234`, thought for people with long codes.
 
 - `PIN pad lock message` allows you to manage the custom message you can add to the PIN Pad. This is optional.
 
 - `Cancel` button: a quick tap will delete a digit of the code you entered, a long hold will delete every digits.
 
-- You have three tries before the device is locked for 30 seconds and you can not interact with it.
+- `Advanced Settings`
+  - You can choose the timeout time, the max number of tries before timeout, among other things.
 
-- The pad will appear based on the current screensaver setting you're using.
+- The pad will appear on the current screensaver you're using, except when first hooking into KOReader where it will appear on a black background.
 
 - Check for updates directly from your device, without having to open GitHub. This feature needs the device to be connected to Internet.
 
 ## Future work
 
-- Currently have no idea, do not hesitate to bring up issues !
+- Features : Currently have no idea, do not hesitate to bring up issues !
+- Fix : Screen becomes full black and untouchable when suspending/powering off the device before unlocking the "hook Pin Pad"
 
 **Note:** I do not know when I'll be implementing these features. Also, my work could probably be optimized so I'm open to any new ideas and remarks.
 
@@ -52,5 +54,10 @@ The default code is "1234". You can also add a custom message to display with th
 - 3 tries limit before a 30 seconds timeout.
 - PIN Pad appears on the screensaver background (without sleep message)
 - When launching KOReader (on a jailbroken kindle), PIN Pad now appears right away, not leaving the possibility to deactivate or reset the lock.
+- Easier installation process with the icon directly in the plugin.
+- PIN Pad appearing on the current screensaver without having to rebuild everything.
+- Can show digits when typing.
+- Less flashy overall.
+- Pin pad disappears when suspending device before unlocking the pad.
 
 :)
