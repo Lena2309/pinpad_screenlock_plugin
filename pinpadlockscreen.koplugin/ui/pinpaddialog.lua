@@ -219,13 +219,30 @@ end
 function PinPadDialog:isBlocked()
     local block_start = G_reader_settings:readSetting("block_start_time") or 0
     if block_start == 0 then
+        if self.blocking_dialog then
+            UIManager:close(self.blocking_dialog, "ui")
+            self.blocking_dialog = nil
+        end
         return false
     end
 
     local elapsed = os.time() - block_start
-    if elapsed >= TIMEOUT_TIME then
+
+    if elapsed < 0 then
         G_reader_settings:saveSetting("block_start_time", 0)
         G_reader_settings:saveSetting("current_tries_number", 0)
+        if self.blocking_dialog then
+            UIManager:close(self.blocking_dialog, "ui")
+            self.blocking_dialog = nil
+        end
+        return false
+    end
+
+    if elapsed >= TIMEOUT_TIME then
+        if self.blocking_dialog then
+            UIManager:close(self.blocking_dialog, "ui")
+            self.blocking_dialog = nil
+        end
         return false
     else
         self.remaining_block_time = TIMEOUT_TIME - elapsed
@@ -308,17 +325,11 @@ function PinPadDialog:showPinPad()
 end
 
 function PinPadDialog:showBlockingDialog(remaining_time)
-    if self.blocking_dialog then return end
-
     self.blocking_dialog = InfoMessage:new {
         text = _("Too many failed attempts. Wait " .. remaining_time .. " seconds."),
         timeout = remaining_time,
         dismissable = false,
     }
-
-    function self.blocking_dialog:onClose()
-        self.blocking_dialog = nil
-    end
 
     UIManager:show(self.blocking_dialog, "ui")
     UIManager:nextTick(function()
