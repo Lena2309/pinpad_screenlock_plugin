@@ -54,6 +54,14 @@ function PinPadMenuEntry:pinPadEnabled()
     return G_reader_settings:isTrue("pinpadlock_activated")
 end
 
+function PinPadMenuEntry:correctPinMessageEnabled()
+    return G_reader_settings:isTrue("pinpadlock_correct_pin_message_activated")
+end
+
+function PinPadMenuEntry:displayDigitEnabled()
+    return G_reader_settings:isTrue("pinpadlock_display_digit_activated")
+end
+
 function PinPadMenuEntry:genRadioMenuItem(text, setting, value)
     return {
         text = text,

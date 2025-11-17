@@ -24,6 +24,15 @@ end
 if G_reader_settings:hasNot("pinpadlock_activated") then
     G_reader_settings:makeFalse("pinpadlock_activated")
 end
+if G_reader_settings:hasNot("pinpadlock_correct_pin_message_activated") then
+    G_reader_settings:makeTrue("pinpadlock_correct_pin_message_activated")
+end
+if G_reader_settings:hasNot("pinpadlock_timeout_time") then
+    G_reader_settings:saveSetting("pinpadlock_timeout_time", "30")
+end
+if G_reader_settings:hasNot("pinpadlock_max_tries") then
+    G_reader_settings:saveSetting("pinpadlock_max_tries", "3")
+end
 if G_reader_settings:hasNot("pinpadlock_show_message") then
     G_reader_settings:makeFalse("pinpadlock_show_message")
 end

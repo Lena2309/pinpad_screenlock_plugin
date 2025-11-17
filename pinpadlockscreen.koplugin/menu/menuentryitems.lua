@@ -87,6 +87,45 @@ return {
             }
         },
         {
+            text = _("Advanced Settings"),
+            sub_item_table = {
+                {
+                    text = _("Activate correct PIN pop-up"),
+                    checked_func = function()
+                        return PinPadMenuEntry:correctPinMessageEnabled()
+                    end,
+                    callback = function()
+                        G_reader_settings:toggle("pinpadlock_correct_pin_message_activated")
+                    end,
+                },
+                {
+                    text = _("Display entered digit before hiding it"),
+                    checked_func = function()
+                        return PinPadMenuEntry:displayDigitEnabled()
+                    end,
+                    callback = function()
+                        G_reader_settings:toggle("pinpadlock_display_digit_activated")
+                    end,
+                },
+                {
+                    text = _("Set Timeout time"),
+                    sub_item_table = {
+                        PinPadMenuEntry:genRadioMenuItem(_("10 seconds"), "pinpadlock_timeout_time", "10"),
+                        PinPadMenuEntry:genRadioMenuItem(_("30 seconds"), "pinpadlock_timeout_time", "30"),
+                        PinPadMenuEntry:genRadioMenuItem(_("60 seconds"), "pinpadlock_timeout_time", "60"),
+                    },
+                },
+                {
+                    text = _("Set max tries before timeout"),
+                    sub_item_table = {
+                        PinPadMenuEntry:genRadioMenuItem(_("1"), "pinpadlock_max_tries", "1"),
+                        PinPadMenuEntry:genRadioMenuItem(_("3"), "pinpadlock_max_tries", "3"),
+                        PinPadMenuEntry:genRadioMenuItem(_("6"), "pinpadlock_max_tries", "6"),
+                    },
+                },
+            },
+        },
+        {
             text = _("Check for updates"),
             callback = function()
                 PinPadMenuEntry:checkForUpdates()
