@@ -19,6 +19,7 @@ local MovableContainer = require("ui/widget/container/movablecontainer")
 local ScrollTextWidget = require("ui/widget/scrolltextwidget")
 local Size = require("ui/size")
 local TextBoxWidget = require("ui/widget/textboxwidget")
+local UIManager = require("ui/uimanager")
 local VerticalGroup = require("ui/widget/verticalgroup")
 local VerticalSpan = require("ui/widget/verticalspan")
 local Screen = Device.screen
@@ -74,6 +75,13 @@ function PinpadButtonDialog:init()
         plugin_dir = currentFileSource:gsub("^@(.*)/[^/]*", "%1")
     end
 
+    self.title_widget = TextBoxWidget:new {
+        text = self.title,
+        face = title_face,
+        width = self.width,
+        alignment = self.title_align,
+    }
+
     local aesthetic_space = VerticalSpan:new { width = Size.margin.default + Size.padding.default }
     local text_pin_content = VerticalGroup:new {
         align = "center",
@@ -88,12 +96,7 @@ function PinpadButtonDialog:init()
         aesthetic_space,
         VerticalGroup:new {
             align = "center",
-            TextBoxWidget:new {
-                text = self.title,
-                face = title_face,
-                width = self.width,
-                alignment = self.title_align,
-            },
+            self.title_widget
         },
     }
 
@@ -219,6 +222,14 @@ function PinpadButtonDialog:init()
         dimen = Screen:getSize(),
         self.movable,
     }
+end
+
+function PinpadButtonDialog:updateTitle(text)
+    if self.title_widget then
+        self.title = text
+        self.title_widget:setText(text)
+        UIManager:setDirty(self, "ui")
+    end
 end
 
 return PinpadButtonDialog

@@ -21,23 +21,22 @@ local util = require("util")
 local _ = require("gettext")
 local Screen = Device.screen
 
+local ScreensaverUtil = require("util/screensaverutil")
+
 local DGENERIC_ICON_SIZE = G_defaults:readSetting("DGENERIC_ICON_SIZE")
 
 local LOCKED_TEXT = _("Enter your PIN")
 local CONFIRM_CURRENT_CODE_TEXT = _("Enter the current PIN Code")
 local NEW_CODE_TEXT = _("Enter the new PIN Code")
 
-local MAX_TRIES_LIMIT = 3
-local TIMEOUT_TIME = 30
+local MAX_TRIES_LIMIT = tonumber(G_reader_settings:readSetting("pinpadlock_max_tries"))
+local TIMEOUT_TIME = tonumber(G_reader_settings:readSetting("pinpadlock_timeout_time"))
 
 if G_reader_settings:hasNot("current_tries_number") then
     G_reader_settings:saveSetting("current_tries_number", 0)
 end
 if G_reader_settings:hasNot("block_start_time") then
     G_reader_settings:saveSetting("block_start_time", 0)
-end
-if G_reader_settings:hasNot("currently_blocked") then
-    G_reader_settings:makeFalse("currently_blocked")
 end
 
 local PinPadDialog = FrameContainer:extend {
@@ -49,11 +48,6 @@ function PinPadDialog:init()
     self:setDialogText()
     self.pin = ""
     self.buttons = self:initializeButtons()
-    Screensaver:setup()
-    self:initializeScreensaverBackground()
-    if self.screensaver_widget then
-        UIManager:show(self.screensaver_widget)
-    end
     return self
 end
 
@@ -112,29 +106,23 @@ function PinPadDialog:initializeScreensaverBackground()
 
     if Screensaver:modeExpectsPortrait() then
         Device.orig_rotation_mode = rotation_mode
-        -- Leave Portrait & Inverted Portrait alone, that works just fine.
         if bit.band(Device.orig_rotation_mode, 1) == 1 then
-            -- i.e., only switch to Portrait if we're currently in *any* Landscape orientation (odd number)
             Screen:setRotationMode(Screen.DEVICE_ROTATED_UPRIGHT)
         else
             Device.orig_rotation_mode = nil
         end
 
-        -- On eInk, if we're using a screensaver mode that shows an image,
-        -- flash the screen to white first, to eliminate ghosting.
         if Device:hasEinkScreen() and Screensaver:modeIsImage() then
             if Screensaver:withBackground() then
                 Screen:clear()
             end
             Screen:refreshFull(0, 0, Screen:getWidth(), Screen:getHeight())
 
-            -- On Kobo, on sunxi SoCs with a recent kernel, wait a tiny bit more to avoid weird refresh glitches...
             if Device:isKobo() and Device:isSunxi() then
                 ffiUtil.usleep(150 * 1000)
             end
         end
     else
-        -- nil it, in case user switched ScreenSaver modes during our lifetime.
         Device.orig_rotation_mode = nil
     end
 
@@ -151,7 +139,6 @@ function PinPadDialog:initializeScreensaverBackground()
             widget_settings.image_disposable = true
         elseif Screensaver.image_file then
             if G_reader_settings:isTrue("screensaver_rotate_auto_for_best_fit") then
-                -- We need to load the image here to determine whether to rotate
                 if util.getFileNameSuffix(Screensaver.image_file) == "svg" then
                     widget_settings.image = RenderImage:renderSVGImageFile(Screensaver.image_file, nil, nil, 1)
                 else
@@ -167,9 +154,9 @@ function PinPadDialog:initializeScreensaverBackground()
                 widget_settings.file_do_cache = false
             end
             widget_settings.alpha = true
-        end                                               -- set cover or file
+        end
         if G_reader_settings:isTrue("screensaver_rotate_auto_for_best_fit") then
-            local angle = rotation_mode == 3 and 180 or 0 -- match mode if possible
+            local angle = rotation_mode == 3 and 180 or 0
             if (widget_settings.image:getWidth() < widget_settings.image:getHeight()) ~= (widget_settings.width < widget_settings.height) then
                 angle = angle + (G_reader_settings:isTrue("imageviewer_rotation_landscape_invert") and -90 or 90)
             end
@@ -186,16 +173,14 @@ function PinPadDialog:initializeScreensaverBackground()
         widget = Screensaver.getReaderProgress()
     end
 
-    -- Assume that we'll be covering the full-screen by default (either because of a widget, or a background fill).
     local covers_fullscreen = true
-    -- Speaking of, set that background fill up...
     local background
-    if Screensaver.screensaver_background == "black" then
-        background = Blitbuffer.COLOR_BLACK
-    elseif Screensaver.screensaver_background == "white" then
+    if Screensaver.screensaver_background == "white" then
         background = Blitbuffer.COLOR_WHITE
     elseif Screensaver.screensaver_background == "none" then
         background = nil
+    else
+        background = Blitbuffer.COLOR_BLACK
     end
 
     UIManager:setIgnoreTouchInput(false)
@@ -204,6 +189,27 @@ function PinPadDialog:initializeScreensaverBackground()
         self.screensaver_widget = ScreenSaverWidget:new {
             widget = widget,
             background = background,
+            covers_fullscreen = covers_fullscreen,
+        }
+        self.screensaver_widget.dithered = true
+    else
+        local currentFileSource = debug.getinfo(1, "S").source
+        local plugin_dir
+        if currentFileSource:find("^@") then
+            plugin_dir = currentFileSource:gsub("^@(.*)/[^/]*", "%1")
+        end
+        -- dummy widget
+        widget = ImageWidget:new {
+            file = plugin_dir .. "/icons/lock.svg",
+            alpha = true,
+            width = self.icon_size,
+            height = self.icon_size,
+            scale_factor = 0,
+            original_in_nightmode = false,
+        }
+        self.screensaver_widget = ScreenSaverWidget:new {
+            widget = widget,
+            background = Blitbuffer.COLOR_BLACK,
             covers_fullscreen = covers_fullscreen,
         }
         self.screensaver_widget.dithered = true
@@ -218,8 +224,6 @@ function PinPadDialog:isBlocked()
 
     local elapsed = os.time() - block_start
     if elapsed >= TIMEOUT_TIME then
-        -- Timeout expired, unblockS
-        G_reader_settings:makeFalse("currently_blocked")
         G_reader_settings:saveSetting("block_start_time", 0)
         G_reader_settings:saveSetting("current_tries_number", 0)
         return false
@@ -230,6 +234,21 @@ function PinPadDialog:isBlocked()
 end
 
 function PinPadDialog:showPinPad()
+    local screensaver_visible = UIManager:isWidgetShown(Screensaver.screensaver_widget)
+
+    if screensaver_visible then
+        ScreensaverUtil.freeze()
+        self.reused_screensaver = true
+    else
+        Screensaver:setup()
+        self:initializeScreensaverBackground()
+        if self.screensaver_widget then
+            UIManager:show(self.screensaver_widget)
+        end
+        self.reused_screensaver = false
+    end
+
+
     local currentFileSource = debug.getinfo(1, "S").source
     local plugin_dir
     if currentFileSource:find("^@") then
@@ -270,17 +289,49 @@ function PinPadDialog:showPinPad()
             }
         }
     end
-    UIManager:show(self.dialog)
 
-    -- overlay the blocking message if needed
+    UIManager:show(self.dialog, "ui")
+    UIManager:nextTick(function()
+        for i = 1, #UIManager._window_stack do
+            if UIManager._window_stack[i].widget == self.dialog then
+                local dialog_entry = table.remove(UIManager._window_stack, i)
+                table.insert(UIManager._window_stack, dialog_entry)
+                UIManager:setDirty(self.dialog, "ui")
+                break
+            end
+        end
+    end)
+
     if self.stage == "locked" and self:isBlocked() then
-        self.blocking_dialog = InfoMessage:new {
-            text = _("Too many failed attempts. Wait " .. self.remaining_block_time .. " seconds."),
-            timeout = self.remaining_block_time,
-            dismissable = false,
-        }
-        UIManager:show(self.blocking_dialog)
+        self:showBlockingDialog(self.remaining_block_time)
     end
+end
+
+function PinPadDialog:showBlockingDialog(remaining_time)
+    if self.blocking_dialog then return end
+
+    self.blocking_dialog = InfoMessage:new {
+        text = _("Too many failed attempts. Wait " .. remaining_time .. " seconds."),
+        timeout = remaining_time,
+        dismissable = false,
+    }
+
+    function self.blocking_dialog:onClose()
+        self.blocking_dialog = nil
+    end
+
+    UIManager:show(self.blocking_dialog, "ui")
+    UIManager:nextTick(function()
+        if not self.blocking_dialog then return end
+        for i = 1, #UIManager._window_stack do
+            if UIManager._window_stack[i].widget == self.blocking_dialog then
+                local blocking_entry = table.remove(UIManager._window_stack, i)
+                table.insert(UIManager._window_stack, blocking_entry)
+                UIManager:setDirty(self.blocking_dialog, "ui")
+                break
+            end
+        end
+    end)
 end
 
 function PinPadDialog:reset()
@@ -289,52 +340,88 @@ function PinPadDialog:reset()
 end
 
 function PinPadDialog:closeDialogs()
+    if self.digit_display_timer then
+        self.digit_display_timer:stop()
+        self.digit_display_timer = nil
+    end
     if self.blocking_dialog then
-        UIManager:close(self.blocking_dialog)
+        UIManager:close(self.blocking_dialog, "ui")
     end
     if self.dialog then
-        UIManager:close(self.dialog)
+        UIManager:close(self.dialog, "ui")
     end
 end
 
-function PinPadDialog:refreshUI()
-    self:closeDialogs()
-    self:showPinPad()
-end
-
-function PinPadDialog:close()
+function PinPadDialog:close(callback_function)
     self:reset()
-    self:closeDialogs()
-    if self.screensaver_widget then
-        UIManager:close(self.screensaver_widget)
-        self.screensaver_widget = nil
+    if not callback_function then
+        self:closeDialogs()
+    end
+    if self.reused_screensaver then
+        ScreensaverUtil.forceClose(function()
+            if callback_function then
+                self:closeDialogs()
+                callback_function()
+            end
+        end)
+    else
+        if self.screensaver_widget then
+            ScreensaverUtil.forceClose(function()
+                if callback_function then
+                    self:closeDialogs()
+                    callback_function()
+                end
+            end)
+            UIManager:close(self.screensaver_widget)
+            self.screensaver_widget = nil
+        end
     end
 end
 
 function PinPadDialog:onAppendToPin(digit)
+    if self.digit_display_timer then
+        self.digit_display_timer:stop()
+        self.digit_display_timer = nil
+    end
     if self.dialog_text == LOCKED_TEXT or self.dialog_text == CONFIRM_CURRENT_CODE_TEXT or self.dialog_text == NEW_CODE_TEXT then
         self.dialog_text = ""
     end
-    self.dialog_text = self.dialog_text .. "*"
     self.pin = self.pin .. digit
-    self:refreshUI()
+
+    if G_reader_settings:isTrue("pinpadlock_display_digit_activated") then
+        local temp_display_text = self.dialog_text .. digit
+        self.dialog:updateTitle(temp_display_text)
+
+        self.dialog_text = self.dialog_text .. "*"
+
+        self.digit_display_timer = UIManager:scheduleIn(1, function()
+            self.dialog:updateTitle(self.dialog_text)
+            self.digit_display_timer = nil
+        end)
+    else
+        self.dialog_text = self.dialog_text .. "*"
+        self.dialog:updateTitle(self.dialog_text)
+    end
 end
 
 function PinPadDialog:onOk()
     if self.stage == "locked" then
         if self.pin == G_reader_settings:readSetting("pinpadlock_pin_code") then
             self:close()
-            UIManager:show(InfoMessage:new { text = _("Correct PIN, have fun !"), timeout = 2 })
+            if G_reader_settings:isTrue("pinpadlock_correct_pin_message_activated") then
+                UIManager:show(InfoMessage:new { text = _("Correct PIN, have fun !"), timeout = 2 })
+            end
             G_reader_settings:saveSetting("current_tries_number", 0)
             G_reader_settings:saveSetting("block_start_time", 0)
             G_reader_settings:makeFalse("suspended_device")
         else
             if self.pin == "" then
-                return -- ignore button press if pin is empty
+                return
             end
             local current_tries = G_reader_settings:readSetting("current_tries_number")
             if (current_tries + 1) >= MAX_TRIES_LIMIT then
                 G_reader_settings:saveSetting("block_start_time", os.time())
+                self:showBlockingDialog(TIMEOUT_TIME)
             else
                 G_reader_settings:saveSetting("current_tries_number", current_tries + 1)
                 UIManager:show(InfoMessage:new { text = _("Wrong PIN, try again."), timeout = 2 })
@@ -360,27 +447,27 @@ end
 
 function PinPadDialog:onDelete()
     if self.pin == "" then
-        return -- ignore button press if pin is empty
+        return
     elseif #self.pin == 1 then
         self.pin = ""
     else
         self.pin = self.pin:sub(1, #self.pin - 1)
     end
 
-    if #self.dialog_text == 1 then -- display default text back
+    if #self.dialog_text == 1 then
         self:setDialogText()
     elseif not (self.dialog_text == LOCKED_TEXT or self.dialog_text == CONFIRM_CURRENT_CODE_TEXT or self.dialog_text == NEW_CODE_TEXT) then
         self.dialog_text = self.dialog_text:sub(1, #self.dialog_text - 1)
     end
-    self:refreshUI()
+    self.dialog:updateTitle(self.dialog_text)
 end
 
 function PinPadDialog:onCancel()
     if self.pin == "" then
-        return -- ignore button press if pin is empty
+        return
     end
     self:reset()
-    self:refreshUI()
+    self.dialog:updateTitle(self.dialog_text)
 end
 
 return PinPadDialog

@@ -11,11 +11,7 @@ local EventListener = require("ui/widget/eventlistener")
 local _ = require("gettext")
 local UIManager = require("ui/uimanager")
 local MenuEntryItems = require("menu/menuentryitems")
-
-local LoggerFactory = require("logger")
-local log = (type(LoggerFactory) == "function" and LoggerFactory("FolderCover"))
-    or (LoggerFactory and LoggerFactory.new and LoggerFactory:new("FolderCover"))
-    or { dbg = function() end, info = print, warn = print, err = print }
+local logger = require("logger")
 
 -- Default settings
 if G_reader_settings:hasNot("pinpadlock_pin_code") then
@@ -49,7 +45,34 @@ if G_reader_settings:hasNot("suspended_device") then
     G_reader_settings:makeTrue("suspended_device")
 end
 
-local ScreenLock = EventListener:extend {}
+local ScreenLock = EventListener:extend {
+    pinPadDialog = nil,
+}
+
+function ScreenLock:erasePinPadDialog()
+    if self.pinPadDialog then
+        self.pinPadDialog:close(function()
+            self.pinPadDialog = nil
+        end)
+    end
+end
+
+------------------------------------------------------------------------------
+--- DEVICE LISTENER OVERRIDE
+------------------------------------------------------------------------------
+local ref_self = nil
+local _original_PowerOff = UIManager.poweroff_action
+UIManager.poweroff_action = function()
+    logger.warn("in suspend ref_self: " .. tostring(ref_self))
+    if ref_self then
+        logger.warn("before erase dialog: " .. tostring(ref_self))
+        ref_self:erasePinPadDialog()
+        logger.warn("after erase dialog: " .. tostring(ref_self))
+    end
+    UIManager:nextTick(function()
+        _original_PowerOff()
+    end)
+end
 
 ------------------------------------------------------------------------------
 --- REGISTER DISPATCHER ACTIONS
@@ -96,20 +119,15 @@ function ScreenLock:init()
     self:onDispatcherRegisterActions()
     self.ui.menu:registerToMainMenu(self)
 
-    local self_ref = self
+    ref_self = self
     if G_reader_settings:isTrue("pinpadlock_activated") and G_reader_settings:isTrue("suspended_device") then
-        self_ref:lockScreen()
+        ref_self:lockScreen()
     end
 
     return self
 end
 
 function ScreenLock:onResume()
-    if self.pinPadDialog then
-        self.pinPadDialog:close()
-        self.pinPadDialog = nil
-    end
-
     if G_reader_settings:isTrue("pinpadlock_activated") then
         self:lockScreen()
     end
@@ -127,12 +145,14 @@ end
 --- LOCK SCREEN
 ------------------------------------------------------------------------------
 function ScreenLock:lockScreen()
+    ref_self = self
     UIManager:nextTick(function()
-        if not self.pinPadDialog then
-            self.pinPadDialog = PinPadDialog:init()
-            self.pinPadDialog:showPinPad()
-        end
+        if self.pinPadDialog then self.pinPadDialog:closeDialogs() end
+
+        self.pinPadDialog = PinPadDialog:init()
+        self.pinPadDialog:showPinPad()
     end)
+    ref_self = self
 end
 
 ------------------------------------------------------------------------------
