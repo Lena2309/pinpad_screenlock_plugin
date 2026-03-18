@@ -147,7 +147,14 @@ end
 function ScreenLock:lockScreen()
     ref_self = self
     UIManager:nextTick(function()
-        if self.pinPadDialog then self.pinPadDialog:closeDialogs() end
+        if self.pinPadDialog then
+            if self.pinPadDialog.screensaver_widget then
+                UIManager:close(self.pinPadDialog.screensaver_widget)
+                self.pinPadDialog.screensaver_widget = nil
+            end
+            self.pinPadDialog:closeDialogs()
+            self.pinPadDialog = nil
+        end
 
         self.pinPadDialog = PinPadDialog:init()
         self.pinPadDialog:showPinPad()
