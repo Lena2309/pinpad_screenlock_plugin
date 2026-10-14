@@ -4,7 +4,6 @@ Inspiration and original skeleton from `https://github.com/yogi81/screenlock_kor
 Description: implements a screen lock mechanism for KOReader
 using a PIN pad interface. Also adds a menu entry in Settings -> Screen
 ]]
-
 local Dispatcher = require("dispatcher")
 local PinPadDialog = require("ui/pinpaddialog")
 local EventListener = require("ui/widget/eventlistener")
@@ -13,10 +12,9 @@ local UIManager = require("ui/uimanager")
 local MenuEntryItems = require("menu/menuentryitems")
 local logger = require("logger")
 
+require("util/pinstore").migrate()
+
 -- Default settings
-if G_reader_settings:hasNot("pinpadlock_pin_code") then
-    G_reader_settings:saveSetting("pinpadlock_pin_code", "1234")
-end
 if G_reader_settings:hasNot("pinpadlock_activated") then
     G_reader_settings:makeFalse("pinpadlock_activated")
 end
@@ -45,15 +43,18 @@ if G_reader_settings:hasNot("suspended_device") then
     G_reader_settings:makeTrue("suspended_device")
 end
 
-local ScreenLock = EventListener:extend {
-    pinPadDialog = nil,
+local ScreenLock =
+    EventListener:extend {
+    pinPadDialog = nil
 }
 
 function ScreenLock:erasePinPadDialog()
     if self.pinPadDialog then
-        self.pinPadDialog:close(function()
-            self.pinPadDialog = nil
-        end)
+        self.pinPadDialog:close(
+            function()
+                self.pinPadDialog = nil
+            end
+        )
     end
 end
 
@@ -69,22 +70,27 @@ UIManager.poweroff_action = function()
         ref_self:erasePinPadDialog()
         logger.warn("after erase dialog: " .. tostring(ref_self))
     end
-    UIManager:nextTick(function()
-        _original_PowerOff()
-    end)
+    UIManager:nextTick(
+        function()
+            _original_PowerOff()
+        end
+    )
 end
 
 ------------------------------------------------------------------------------
 --- REGISTER DISPATCHER ACTIONS
 ------------------------------------------------------------------------------
 function ScreenLock:onDispatcherRegisterActions()
-    Dispatcher:registerAction("screenlock_pin_pad_lock_screen", {
-        category    = "none",
-        event       = "LockScreenPinPad",
-        title       = _("Lock Screen (PinPad)"),
-        filemanager = true,
-        device      = true,
-    })
+    Dispatcher:registerAction(
+        "screenlock_pin_pad_lock_screen",
+        {
+            category = "none",
+            event = "LockScreenPinPad",
+            title = _("Lock Screen (PinPad)"),
+            filemanager = true,
+            device = true
+        }
+    )
 end
 
 ------------------------------------------------------------------------------
@@ -146,19 +152,21 @@ end
 ------------------------------------------------------------------------------
 function ScreenLock:lockScreen()
     ref_self = self
-    UIManager:nextTick(function()
-        if self.pinPadDialog then
-            if self.pinPadDialog.screensaver_widget then
-                UIManager:close(self.pinPadDialog.screensaver_widget)
-                self.pinPadDialog.screensaver_widget = nil
+    UIManager:nextTick(
+        function()
+            if self.pinPadDialog then
+                if self.pinPadDialog.screensaver_widget then
+                    UIManager:close(self.pinPadDialog.screensaver_widget)
+                    self.pinPadDialog.screensaver_widget = nil
+                end
+                self.pinPadDialog:closeDialogs()
+                self.pinPadDialog = nil
             end
-            self.pinPadDialog:closeDialogs()
-            self.pinPadDialog = nil
-        end
 
-        self.pinPadDialog = PinPadDialog:init()
-        self.pinPadDialog:showPinPad()
-    end)
+            self.pinPadDialog = PinPadDialog:new {}
+            self.pinPadDialog:showPinPad()
+        end
+    )
     ref_self = self
 end
 

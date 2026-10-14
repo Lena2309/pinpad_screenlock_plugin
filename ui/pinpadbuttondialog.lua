@@ -4,7 +4,6 @@ Description: customizes KOReader's existing ButtonDialog class solely
 for aesthetic purposes (icon widget, vertical layout...),
 with the primary modification in the `init` function.
 ]]
-
 local Blitbuffer = require("ffi/blitbuffer")
 local ButtonDialog = require("ui/widget/buttondialog")
 local ButtonTable = require("ui/widget/buttontable")
@@ -27,8 +26,9 @@ local util = require("util")
 
 local DGENERIC_ICON_SIZE = G_defaults:readSetting("DGENERIC_ICON_SIZE")
 
-local PinpadButtonDialog = ButtonDialog:extend {
-    override_show_message = false, -- will prevent showing custom lock message even if enabled (specific for changing PIN Code)
+local PinpadButtonDialog =
+    ButtonDialog:extend {
+    override_show_message = false -- will prevent showing custom lock message even if enabled (specific for changing PIN Code)
 }
 
 function PinpadButtonDialog:init()
@@ -42,10 +42,10 @@ function PinpadButtonDialog:init()
             local back_group = util.tableDeepCopy(Device.input.group.Back)
             if Device:hasFewKeys() then
                 table.insert(back_group, "Left")
-                self.key_events.Close = { { back_group } }
+                self.key_events.Close = {{back_group}}
             else
                 table.insert(back_group, "Menu")
-                self.key_events.Close = { { back_group } }
+                self.key_events.Close = {{back_group}}
             end
         end
         if Device:isTouchDevice() then
@@ -53,9 +53,10 @@ function PinpadButtonDialog:init()
                 GestureRange:new {
                     ges = "tap",
                     range = Geom:new {
-                        x = 0, y = 0,
+                        x = 0,
+                        y = 0,
                         w = Screen:getWidth(),
-                        h = Screen:getHeight(),
+                        h = Screen:getHeight()
                     }
                 }
             }
@@ -75,45 +76,51 @@ function PinpadButtonDialog:init()
         plugin_dir = currentFileSource:gsub("^@(.*)/[^/]*", "%1")
     end
 
-    self.title_widget = TextBoxWidget:new {
+    self.title_widget =
+        TextBoxWidget:new {
         text = self.title,
         face = title_face,
         width = self.width,
-        alignment = self.title_align,
+        alignment = self.title_align
     }
 
-    local aesthetic_space = VerticalSpan:new { width = Size.margin.default + Size.padding.default }
-    local text_pin_content = VerticalGroup:new {
+    local aesthetic_space = VerticalSpan:new {width = Size.margin.default + Size.padding.default}
+    local icon_size = math.floor(Screen:scaleBySize(DGENERIC_ICON_SIZE) * 1.25)
+    local text_pin_content =
+        VerticalGroup:new {
         align = "center",
         ImageWidget:new {
             file = plugin_dir .. "/icons/lock.svg",
             alpha = true,
-            width = Screen:scaleBySize(DGENERIC_ICON_SIZE) * 1.25,
-            height = Screen:scaleBySize(DGENERIC_ICON_SIZE) * 1.25,
+            width = icon_size,
+            height = icon_size,
             scale_factor = 0,
-            original_in_nightmode = false,
+            file_do_cache = false,
+            original_in_nightmode = false
         },
         aesthetic_space,
         VerticalGroup:new {
             align = "center",
             self.title_widget
-        },
+        }
     }
 
-    self.buttontable = ButtonTable:new {
+    self.buttontable =
+        ButtonTable:new {
         buttons = self.buttons,
         width = text_pin_content:getSize().w,
         shrink_unneeded_width = self.shrink_unneeded_width,
         shrink_min_width = self.shrink_min_width,
-        show_parent = self,
+        show_parent = self
     }
 
-    local separator = LineWidget:new {
+    local separator =
+        LineWidget:new {
         background = Blitbuffer.COLOR_GRAY,
         dimen = Geom:new {
             w = text_pin_content:getSize().w,
-            h = Size.line.medium,
-        },
+            h = Size.line.medium
+        }
     }
 
     local content
@@ -124,33 +131,37 @@ function PinpadButtonDialog:init()
         local lock_message_alignment = G_reader_settings:readSetting("pinpadlock_message_alignment")
         local lock_message_position = G_reader_settings:readSetting("pinpadlock_message_position")
 
-        local lock_message_widget = TextBoxWidget:new {
+        local lock_message_widget =
+            TextBoxWidget:new {
             text = lock_message,
             face = title_face,
             width = self.width,
-            alignment = lock_message_alignment,
+            alignment = lock_message_alignment
         }
 
         -- If the custom message ends up being too tall and makes the Pin Pad taller than the screen,
         -- wrap it inside a ScrollableContainer
         local max_height = self.buttontable:getSize().h + 3 * text_pin_content:getSize().h + Size.line.medium
-        local height = self.buttontable:getSize().h + text_pin_content:getSize().h + Size.line.medium +
+        local height =
+            self.buttontable:getSize().h + text_pin_content:getSize().h + Size.line.medium +
             lock_message_widget:getSize().h
         if height > max_height then
             local scroll_height = 3 * text_pin_content:getSize().h
 
-            lock_message_widget = ScrollTextWidget:new {
+            lock_message_widget =
+                ScrollTextWidget:new {
                 text = lock_message,
                 face = title_face,
                 width = self.width,
                 alignment = lock_message_alignment,
                 dialog = self,
-                height = scroll_height,
+                height = scroll_height
             }
         end
 
         if lock_message_position == "top" then
-            content = VerticalGroup:new {
+            content =
+                VerticalGroup:new {
                 align = "center",
                 aesthetic_space,
                 lock_message_widget,
@@ -160,10 +171,11 @@ function PinpadButtonDialog:init()
                 text_pin_content,
                 aesthetic_space,
                 separator,
-                self.buttontable,
+                self.buttontable
             }
         elseif lock_message_position == "middle" then
-            content = VerticalGroup:new {
+            content =
+                VerticalGroup:new {
                 align = "center",
                 aesthetic_space,
                 text_pin_content,
@@ -173,10 +185,11 @@ function PinpadButtonDialog:init()
                 lock_message_widget,
                 aesthetic_space,
                 separator,
-                self.buttontable,
+                self.buttontable
             }
         else
-            content = VerticalGroup:new {
+            content =
+                VerticalGroup:new {
                 align = "center",
                 aesthetic_space,
                 text_pin_content,
@@ -186,21 +199,23 @@ function PinpadButtonDialog:init()
                 separator,
                 aesthetic_space,
                 lock_message_widget,
-                aesthetic_space,
+                aesthetic_space
             }
         end
     else
-        content = VerticalGroup:new {
+        content =
+            VerticalGroup:new {
             align = "center",
             aesthetic_space,
             text_pin_content,
             aesthetic_space,
             separator,
-            self.buttontable,
+            self.buttontable
         }
     end
 
-    self.movable = MovableContainer:new {
+    self.movable =
+        MovableContainer:new {
         alpha = self.alpha,
         anchor = self.anchor,
         FrameContainer:new {
@@ -210,17 +225,18 @@ function PinpadButtonDialog:init()
             padding = Size.padding.default,
             padding_top = 0,
             padding_bottom = 0,
-            content,
+            content
         },
-        unmovable = true,
+        unmovable = true
     }
 
     self.layout = self.buttontable.layout
     self.buttontable.layout = nil
 
-    self[1] = CenterContainer:new {
+    self[1] =
+        CenterContainer:new {
         dimen = Screen:getSize(),
-        self.movable,
+        self.movable
     }
 end
 
