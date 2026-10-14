@@ -18,8 +18,8 @@ The default code is "1234". You can also add a custom message to display with th
 
 **Note:**
 
-- There's no limit to the number of digits your code may contain, but good luck if you forget your code (you'll have to dig into your memory or KOReader to find it back).
-- You can change the lock logo by replacing the image from the icons folder. The new icon must be SVG file and be named `lock.svg`.
+- There's no limit to the number of digits your code may contain, but good luck if you forget your code (you'll have to dig into your memory or KOReader to find it back, especially since the lock is hashed).
+- You can change the lock logo by replacing the image from the icons folder. The new icon must be a SVG file named `lock.svg`.
 
 ## Features and Gestures
 
@@ -41,12 +41,12 @@ The default code is "1234". You can also add a custom message to display with th
 ## Future work
 
 - Features : Currently have no idea, do not hesitate to bring up issues !
-- Fix : Screen becomes full black and untouchable when suspending/powering off the device before unlocking the "hook Pin Pad"
 
 **Note:** I do not know when I'll be implementing these features. Also, my work could probably be optimized so I'm open to any new ideas and remarks.
 
 ## Recent Features
 
+- Storing the pin code using hashing.
 - Customizable message on PIN pad lock.
 - Menu Entry where everything is customizable without the need to restart KOReader or modify the code.
 - Using dynamic persistence instead of hardcoded variables.
