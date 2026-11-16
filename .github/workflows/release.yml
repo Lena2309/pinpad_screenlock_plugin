@@ -1,0 +1,40 @@
+name: Package plugin on release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    env:
+      PLUGIN_NAME: pinpadlockscreen.koplugin
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Stage the .koplugin folder
+        run: |
+          mkdir -p "dist/$PLUGIN_NAME"
+          rsync -a ./ "dist/$PLUGIN_NAME/" \
+            --exclude '.git/' \
+            --exclude '.github/' \
+            --exclude 'dist/'
+
+      - name: Create the zip
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          cd dist
+          zip -r "../${PLUGIN_NAME}-${TAG}.zip" "$PLUGIN_NAME"
+
+      - name: Attach it to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          gh release upload "$TAG" "${PLUGIN_NAME}-${TAG}.zip" --clobber

@@ -388,16 +388,21 @@ function PinPadDialog:showBlockingDialog(remaining_time)
     )
 end
 
+function PinPadDialog:cancelDigitTimer()
+    if self.digit_display_timer then
+        UIManager:unschedule(self.digit_display_timer)
+        self.digit_display_timer = nil
+    end
+end
+
 function PinPadDialog:reset()
+    self:cancelDigitTimer()
     self.pin = ""
     self:setDialogText()
 end
 
 function PinPadDialog:closeDialogs()
-    if self.digit_display_timer then
-        self.digit_display_timer:stop()
-        self.digit_display_timer = nil
-    end
+    self:cancelDigitTimer()
     if self.blocking_dialog then
         UIManager:close(self.blocking_dialog, "ui")
     end
@@ -429,10 +434,7 @@ function PinPadDialog:onAppendToPin(digit)
     if self.stage == "locked" and self:isBlocked() then
         return
     end
-    if self.digit_display_timer then
-        self.digit_display_timer:stop()
-        self.digit_display_timer = nil
-    end
+    self:cancelDigitTimer()
     if
         self.dialog_text == LOCKED_TEXT or self.dialog_text == CONFIRM_CURRENT_CODE_TEXT or
             self.dialog_text == NEW_CODE_TEXT
@@ -447,14 +449,13 @@ function PinPadDialog:onAppendToPin(digit)
 
         self.dialog_text = self.dialog_text .. "*"
 
-        self.digit_display_timer =
-            UIManager:scheduleIn(
-            1,
-            function()
+        self.digit_display_timer = function()
+            self.digit_display_timer = nil
+            if self.dialog then
                 self.dialog:updateTitle(self.dialog_text)
-                self.digit_display_timer = nil
             end
-        )
+        end
+        UIManager:scheduleIn(1, self.digit_display_timer)
     else
         self.dialog_text = self.dialog_text .. "*"
         self.dialog:updateTitle(self.dialog_text)
@@ -473,7 +474,9 @@ function PinPadDialog:onOk()
             end
             G_reader_settings:saveSetting("current_tries_number", 0)
             G_reader_settings:saveSetting("block_start_time", 0)
-            G_reader_settings:makeFalse("suspended_device")
+            if self.on_unlock then
+                self.on_unlock()
+            end
         else
             if self.pin == "" then
                 return
@@ -514,6 +517,7 @@ function PinPadDialog:onDelete()
     else
         self.pin = self.pin:sub(1, #self.pin - 1)
     end
+    self:cancelDigitTimer()
 
     if #self.dialog_text == 1 then
         self:setDialogText()

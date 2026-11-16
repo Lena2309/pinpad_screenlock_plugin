@@ -39,9 +39,14 @@ end
 if G_reader_settings:hasNot("pinpadlock_message_alignment") then
     G_reader_settings:saveSetting("pinpadlock_message_alignment", "center")
 end
-if G_reader_settings:hasNot("suspended_device") then
-    G_reader_settings:makeTrue("suspended_device")
+
+-- The old persisted "suspended_device" flag is no longer used: drop it from the settings file
+if G_reader_settings:has("suspended_device") then
+    G_reader_settings:delSetting("suspended_device")
 end
+
+-- to lock after a power off, reboot, restart, crash or hard reset.
+local unlocked_this_session = false
 
 local ScreenLock =
     EventListener:extend {
@@ -126,8 +131,12 @@ function ScreenLock:init()
     self.ui.menu:registerToMainMenu(self)
 
     ref_self = self
-    if G_reader_settings:isTrue("pinpadlock_activated") and G_reader_settings:isTrue("suspended_device") then
-        ref_self:lockScreen()
+    if G_reader_settings:isTrue("pinpadlock_activated") then
+        if not unlocked_this_session then
+            self:lockScreen()
+        end
+    else
+        unlocked_this_session = true
     end
 
     return self
@@ -142,7 +151,7 @@ end
 ------------------------------------------------------------------------------
 --- DISPATCHER HANDLER
 ------------------------------------------------------------------------------
-function ScreenLock:onLockScreen()
+function ScreenLock:onLockScreenPinPad()
     self:lockScreen()
     return true
 end
@@ -152,6 +161,7 @@ end
 ------------------------------------------------------------------------------
 function ScreenLock:lockScreen()
     ref_self = self
+    unlocked_this_session = false
     UIManager:nextTick(
         function()
             if self.pinPadDialog then
@@ -163,7 +173,12 @@ function ScreenLock:lockScreen()
                 self.pinPadDialog = nil
             end
 
-            self.pinPadDialog = PinPadDialog:new {}
+            self.pinPadDialog =
+                PinPadDialog:new {
+                on_unlock = function()
+                    unlocked_this_session = true
+                end
+            }
             self.pinPadDialog:showPinPad()
         end
     )
