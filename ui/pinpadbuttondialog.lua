@@ -28,6 +28,7 @@ local DGENERIC_ICON_SIZE = G_defaults:readSetting("DGENERIC_ICON_SIZE")
 
 local PinpadButtonDialog =
     ButtonDialog:extend {
+    modal = true,
     override_show_message = false -- will prevent showing custom lock message even if enabled (specific for changing PIN Code)
 }
 

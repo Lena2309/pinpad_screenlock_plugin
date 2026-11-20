@@ -37,12 +37,22 @@ local function getTimeout()
     return tonumber(G_reader_settings:readSetting("pinpadlock_timeout_time")) or 30
 end
 
-if G_reader_settings:hasNot("current_tries_number") then
-    G_reader_settings:saveSetting("current_tries_number", 0)
+local TRIES_KEY = "pinpadlock_current_tries"
+local BLOCK_START_KEY = "pinpadlock_block_start_time"
+
+local function initSetting(old_key, new_key)
+    if G_reader_settings:has(old_key) then
+        if G_reader_settings:hasNot(new_key) then
+            G_reader_settings:saveSetting(new_key, G_reader_settings:readSetting(old_key))
+        end
+        G_reader_settings:delSetting(old_key)
+    end
+    if G_reader_settings:hasNot(new_key) then
+        G_reader_settings:saveSetting(new_key, 0)
+    end
 end
-if G_reader_settings:hasNot("block_start_time") then
-    G_reader_settings:saveSetting("block_start_time", 0)
-end
+initSetting("current_tries_number", TRIES_KEY)
+initSetting("block_start_time", BLOCK_START_KEY)
 
 local PinPadDialog =
     FrameContainer:extend {
@@ -293,32 +303,16 @@ function PinPadDialog:initializeScreensaverBackground()
     end
 end
 
-local function bringToFront(widget)
-    local stack = UIManager._window_stack
-    if type(stack) ~= "table" then
-        return
-    end
-    for i = 1, #stack do
-        if stack[i].widget == widget then
-            if i < #stack then
-                table.insert(stack, table.remove(stack, i))
-            end
-            UIManager:setDirty(widget, "ui")
-            return
-        end
-    end
-end
-
 function PinPadDialog:isBlocked()
-    local block_start = G_reader_settings:readSetting("block_start_time") or 0
+    local block_start = G_reader_settings:readSetting(BLOCK_START_KEY) or 0
     local blocked = false
     if block_start ~= 0 then
         local timeout = getTimeout()
         local elapsed = os.time() - block_start
         if elapsed < 0 or elapsed >= timeout then
             -- lockout over (or clock went backwards): start fresh
-            G_reader_settings:saveSetting("block_start_time", 0)
-            G_reader_settings:saveSetting("current_tries_number", 0)
+            G_reader_settings:saveSetting(BLOCK_START_KEY, 0)
+            G_reader_settings:saveSetting(TRIES_KEY, 0)
         else
             self.remaining_block_time = timeout - elapsed
             blocked = true
@@ -335,7 +329,11 @@ function PinPadDialog:showPinPad()
     local screensaver_visible = UIManager:isWidgetShown(Screensaver.screensaver_widget)
 
     if screensaver_visible then
-        ScreensaverUtil.freeze()
+        ScreensaverUtil.freeze(
+            function()
+                self:closeDialogs()
+            end
+        )
         self.reused_screensaver = true
     else
         Screensaver:setup()
@@ -357,13 +355,6 @@ function PinPadDialog:showPinPad()
     }
 
     UIManager:show(self.dialog, "ui")
-    UIManager:nextTick(
-        function()
-            if self.dialog then
-                bringToFront(self.dialog)
-            end
-        end
-    )
 
     if self.stage == "locked" and self:isBlocked() then
         self:showBlockingDialog(self.remaining_block_time)
@@ -379,13 +370,6 @@ function PinPadDialog:showBlockingDialog(remaining_time)
     }
 
     UIManager:show(self.blocking_dialog, "ui")
-    UIManager:nextTick(
-        function()
-            if self.blocking_dialog then
-                bringToFront(self.blocking_dialog)
-            end
-        end
-    )
 end
 
 function PinPadDialog:cancelDigitTimer()
@@ -405,9 +389,11 @@ function PinPadDialog:closeDialogs()
     self:cancelDigitTimer()
     if self.blocking_dialog then
         UIManager:close(self.blocking_dialog, "ui")
+        self.blocking_dialog = nil
     end
     if self.dialog then
         UIManager:close(self.dialog, "ui")
+        self.dialog = nil
     end
 end
 
@@ -472,8 +458,8 @@ function PinPadDialog:onOk()
             if G_reader_settings:isTrue("pinpadlock_correct_pin_message_activated") then
                 UIManager:show(InfoMessage:new {text = _("Correct PIN, have fun !"), timeout = 2})
             end
-            G_reader_settings:saveSetting("current_tries_number", 0)
-            G_reader_settings:saveSetting("block_start_time", 0)
+            G_reader_settings:saveSetting(TRIES_KEY, 0)
+            G_reader_settings:saveSetting(BLOCK_START_KEY, 0)
             if self.on_unlock then
                 self.on_unlock()
             end
@@ -481,13 +467,13 @@ function PinPadDialog:onOk()
             if self.pin == "" then
                 return
             end
-            local tries = (G_reader_settings:readSetting("current_tries_number") or 0) + 1
+            local tries = (G_reader_settings:readSetting(TRIES_KEY) or 0) + 1
             if tries >= getMaxTries() then
-                G_reader_settings:saveSetting("current_tries_number", 0) -- fresh set after lockout
-                G_reader_settings:saveSetting("block_start_time", os.time())
+                G_reader_settings:saveSetting(TRIES_KEY, 0) -- fresh set after lockout
+                G_reader_settings:saveSetting(BLOCK_START_KEY, os.time())
                 self:showBlockingDialog(getTimeout())
             else
-                G_reader_settings:saveSetting("current_tries_number", tries)
+                G_reader_settings:saveSetting(TRIES_KEY, tries)
                 UIManager:show(InfoMessage:new {text = _("Wrong PIN, try again."), timeout = 2})
             end
             self:onCancel()
